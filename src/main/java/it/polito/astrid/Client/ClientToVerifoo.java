@@ -16,23 +16,16 @@ public class ClientToVerifoo {
 	}
 
 
-
 	public static void main(String[] args) {
         simpleGet();
        
         
     }
 
-    
-
 	private static void postGraphYaml(String string) {
-			 
-		 
 		        RestTemplate restTemplate = new RestTemplate();
-		 
 		        // Data attached to the request.
 		        HttpEntity<String> requestBody = new HttpEntity<>(string);
-		 
 		        // Send request with POST method.
 		        ResponseEntity<String> result 
 		             = restTemplate.postForEntity(URL_GRAPH, requestBody, String.class);
