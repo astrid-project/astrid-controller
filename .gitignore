@@ -27,3 +27,5 @@ HELP.md
 
 ### VS Code ###
 .vscode/
+/gen-src/
+/gen-src-astrid/
