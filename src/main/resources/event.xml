@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<InfrastructureEvent type="delete">
+   <EventData resourceType="pod" name="apache" ip="172.20.1.241" uid="apache-c7d97955-2dtf6"></EventData>
+   <EventTime>2019-06-28T13:55:01.546188824Z</EventTime>
+</InfrastructureEvent>

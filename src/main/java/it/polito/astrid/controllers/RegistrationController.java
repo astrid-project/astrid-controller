@@ -21,6 +21,8 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.http.converter.xml.Jaxb2RootElementHttpMessageConverter;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import io.swagger.annotations.ApiOperation;
@@ -30,30 +32,25 @@ import io.swagger.annotations.ApiResponses;
 import it.polito.verefoo.astrid.jaxb.InfrastructureInfo;
 import it.polito.verefoo.jaxb.NFV;
 
-
 //mvn clean package && java -jar target\controller-0.0.1-SNAPSHOT.jar
 
 @Controller
 public class RegistrationController {
-	static final String URL_DC= "http://localhost:8085/verefoo/dc";
-	static final String URL_POLICY= "http://localhost:8085/verefoo/graph";
+	static final String URL_DC = "http://localhost:8085/verefoo/dc";
+	static final String URL_POLICY = "http://localhost:8085/verefoo/graph";
 
-	
-	
-	
 	@ApiOperation(value = "registerInfrastructure", notes = "Recieves Infrastructure info and sends it to Verikube. Waits for result and sends it back", response = NFV.class)
-	@RequestMapping(method = RequestMethod.POST, value = "/register/insfrastructure", produces = "application/xml", consumes="application/xml")
-	@ApiResponses(value = {
-	    		@ApiResponse(code = 201, message = "Created"),
-	    		@ApiResponse(code = 400, message = "Bad Request"),
-	    		})
+	@RequestMapping(method = RequestMethod.POST, value = "/register/insfrastructure", produces = "application/xml", consumes = "application/xml")
+	@ApiResponses(value = { @ApiResponse(code = 201, message = "Created"),
+			@ApiResponse(code = 400, message = "Bad Request"), })
 	@ResponseBody
-	public NFV registerInfrastructure( @ApiParam(value = "Infrastructure Info", required = true) @RequestBody InfrastructureInfo info) {
-		if(info==null||info.getMetadata()==null||info.getMetadata().getName()==null) {
+	public NFV registerInfrastructure(
+			@ApiParam(value = "Infrastructure Info", required = true) @RequestBody InfrastructureInfo info) throws ResourceNotFoundException {
+		if (info == null || info.getMetadata() == null || info.getMetadata().getName() == null) {
 			System.out.println("++++++++++ registerInfrastructure Empty body");
 			return null;
 		}
-		
+
 		/*
 		 * try { StringWriter stringWriter2 = new StringWriter(); JAXBContext jc =
 		 * JAXBContext.newInstance("it.polito.verefoo.astrid.jaxb"); Marshaller m =
@@ -64,24 +61,29 @@ public class RegistrationController {
 		 * e.printStackTrace(); }
 		 * 
 		 */
-		
-	
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_XML);
-		
-		System.out.println("++++++++++ registerInfrastructure Controller Obtained Infrastructure info for: "+info.getMetadata().getName());
+
+		System.out.println("++++++++++ registerInfrastructure Controller Obtained Infrastructure info for: "
+				+ info.getMetadata().getName());
 		RestTemplate restTemplate = new RestTemplate();
 		Jaxb2RootElementHttpMessageConverter converter = new Jaxb2RootElementHttpMessageConverter();
 		converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
-		restTemplate.setMessageConverters(Arrays.asList(converter,new StringHttpMessageConverter()));
+		restTemplate.setMessageConverters(Arrays.asList(converter, new StringHttpMessageConverter()));
 		// Data attached to the request.
-		HttpEntity<InfrastructureInfo> requestBody = new HttpEntity<InfrastructureInfo>(info,headers);
-		
-		
-		
+		HttpEntity<InfrastructureInfo> requestBody = new HttpEntity<InfrastructureInfo>(info, headers);
+
 		System.out.println("++++++++++ registerInfrastructure Controller Sending Infrastructure info to Verekube");
 		// Send request with POST method.
-		NFV result = restTemplate.postForObject(URL_DC, requestBody, NFV.class);
+		NFV result=null;
+		try {
+			 result = restTemplate.postForObject(URL_DC, requestBody, NFV.class);
+		} catch (HttpServerErrorException | HttpClientErrorException ex) {
+			System.out.println("++++++++++ registerInfrastructure Controller  Policy is not defined for this graph");
+			throw new ResourceNotFoundException("Policy is not defined for this graph: "+ex.getMessage() );
+		} 
+
 		
 		/*
 		 * 
@@ -93,30 +95,28 @@ public class RegistrationController {
 		 */
 		return result;
 	}
-	
+
 	@ApiOperation(value = "registerPolicy", notes = "Recieves Policies as String and sends it to Verikube. ")
-	@RequestMapping(method = RequestMethod.POST, value = "/register/policy", produces = "text/plain", consumes="text/plain")
-	@ApiResponses(value = {
-	    		@ApiResponse(code = 201, message = "Created"),
-	    		@ApiResponse(code = 400, message = "Bad Request"),
-	    		})
+	@RequestMapping(method = RequestMethod.POST, value = "/register/policy", produces = "text/plain", consumes = "text/plain")
+	@ApiResponses(value = { @ApiResponse(code = 201, message = "Created"),
+			@ApiResponse(code = 400, message = "Bad Request"), })
 	@ResponseBody
 	public String registerPolicy(@RequestBody String policy) {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.TEXT_PLAIN);
-		
+
 		System.out.println("++++++++++ registerPolicy Controller Obtained Policy");
 		RestTemplate restTemplate = new RestTemplate();
-		
+
 		// Data attached to the request.
-		HttpEntity<String> requestBody = new HttpEntity<>(policy,headers);
+		HttpEntity<String> requestBody = new HttpEntity<>(policy, headers);
 
 		System.out.println("++++++++++ registerPolicy Controller Sending to Verekube");
 		// Send request with POST method.
 		ResponseEntity<String> result = restTemplate.postForEntity(URL_POLICY, requestBody, String.class);
 		// Code = 200.
 		if (result.getStatusCode() == HttpStatus.OK) {
-			System.out.println("++++++++++ registerPolicy Controller Success from Verekube: "+result.getBody());
+			System.out.println("++++++++++ registerPolicy Controller Success from Verekube: " + result.getBody());
 		}
 		return result.getBody();
 	}
