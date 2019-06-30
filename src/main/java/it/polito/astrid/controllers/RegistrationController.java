@@ -29,6 +29,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import it.polito.verefoo.astrid.jaxb.InfrastructureEvent;
 import it.polito.verefoo.astrid.jaxb.InfrastructureInfo;
 import it.polito.verefoo.jaxb.NFV;
 
@@ -38,6 +39,7 @@ import it.polito.verefoo.jaxb.NFV;
 public class RegistrationController {
 	static final String URL_DC = "http://localhost:8085/verefoo/dc";
 	static final String URL_POLICY = "http://localhost:8085/verefoo/graph";
+	static final String URL_EVENT = "http://localhost:8085/verefoo/podevent";
 
 	@ApiOperation(value = "registerInfrastructure", notes = "Recieves Infrastructure info and sends it to Verikube. Waits for result and sends it back", response = NFV.class)
 	@RequestMapping(method = RequestMethod.POST, value = "/register/insfrastructure", produces = "application/xml", consumes = "application/xml")
@@ -119,6 +121,36 @@ public class RegistrationController {
 			System.out.println("++++++++++ registerPolicy Controller Success from Verekube: " + result.getBody());
 		}
 		return result.getBody();
+	}
+	
+	@ApiOperation(value = "registerEvent", notes = "Recieves an Event and sends it to Verikube. ")
+	@RequestMapping(method = RequestMethod.POST, value = "/register/event", produces = "application/xml", consumes = "application/xml")
+	@ApiResponses(value = { @ApiResponse(code = 201, message = "Created"),
+			@ApiResponse(code = 400, message = "Bad Request"), })
+	@ResponseBody
+	public NFV registerEvent(@RequestBody InfrastructureEvent event) throws ResourceNotFoundException {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_XML);
+
+		System.out.println("++++++++++ registerEvent Controller Obtained Event");
+		
+		RestTemplate restTemplate = new RestTemplate();
+		Jaxb2RootElementHttpMessageConverter converter = new Jaxb2RootElementHttpMessageConverter();
+		converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
+		restTemplate.setMessageConverters(Arrays.asList(converter, new StringHttpMessageConverter()));
+		HttpEntity<InfrastructureEvent> requestBody = new HttpEntity<InfrastructureEvent>(event, headers);
+
+		System.out.println("++++++++++ registerEvent Controller Sending Event info to Verekube");
+
+		NFV result=null;
+		try {
+			 result = restTemplate.postForObject(URL_EVENT, requestBody, NFV.class);
+		} catch (HttpServerErrorException | HttpClientErrorException ex) {
+			System.out.println("++++++++++ registerInfrastructure Controller  Policy is not defined for this graph");
+			throw new ResourceNotFoundException("Event is not defined for this graph: "+ex.getMessage() );
+		} 
+
+		return result;
 	}
 
 }
