@@ -146,8 +146,8 @@ public class RegistrationController {
 		try {
 			 result = restTemplate.postForObject(URL_EVENT, requestBody, NFV.class);
 		} catch (HttpServerErrorException | HttpClientErrorException ex) {
-			System.out.println("++++++++++ registerInfrastructure Controller  Policy is not defined for this graph");
-			throw new ResourceNotFoundException("Event is not defined for this graph: "+ex.getMessage() );
+			System.out.println("++++++++++ registerInfrastructure Controller  Policy is not defined for this graph " + ex.getResponseBodyAsString());
+			throw new ResourceNotFoundException("Error: "+ex.getResponseBodyAsString() );
 		} 
 
 		return result;
