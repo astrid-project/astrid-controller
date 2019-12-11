@@ -1,3 +1,4 @@
+AUTHOR Jalolliddin Yusupov [@yujboss](https://github.com/yujboss)
 
 ## Astrid Controller
 Astrid Controller is  the core element of the ASTRID conceptual architecture, including both service
