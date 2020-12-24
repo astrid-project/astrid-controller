@@ -1,0 +1,14 @@
+
+
+rule "Interception Request Start"
+	when
+		interceptObject: InterceptionRequest(command=="start")
+	then
+		clientContextBroker.start(interceptObject);
+	end
+rule "Interception Request Stop"
+	when
+		interceptObject: InterceptionRequest(command=="stop")
+	then
+		clientContextBroker.stop(interceptObject);
+	end
