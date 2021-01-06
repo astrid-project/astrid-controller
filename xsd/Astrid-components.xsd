@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:element name="components">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="component" maxOccurs="unbounded" minOccurs="0">
+					<xsd:complexType>
+						<xsd:simpleContent>
+                   			 <xsd:extension base="xsd:string">
+                     			 <xsd:attribute type="xsd:string" name="name" use="required"/>
+                     			 <xsd:attribute type="xsd:string" name="IPAddress" use="required"/>
+                     			 <xsd:attribute type="xsd:integer" name="Port" use="required"/>
+								 <xsd:attribute type="xsd:string" name="Username" use="optional"/>
+								 <xsd:attribute type="xsd:string" name="Password" use="optional"/>
+                   			 </xsd:extension>
+                  		</xsd:simpleContent>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+</xsd:schema>
+
+
+
+
+
