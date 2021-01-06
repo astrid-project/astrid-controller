@@ -1,0 +1,97 @@
+package interception;
+//generated from Decision Table
+import it.polito.astrid.service.*;
+import it.polito.astrid.models.*;
+import it.polito.verefoo.astrid.jaxb.Components.*;
+import it.polito.verefoo.astrid.jaxb.InfrastructureEvent.*;
+import org.springframework.http.ResponseEntity;
+import java.math.BigInteger;
+declare KafkaMessage
+@role( event )
+end
+// rule values at A11, header at A6
+rule "Register Infrastructure info"
+	when
+		interceptObject: InterceptionRequest(command=="/register/insfrastructure")
+		component1: Component(name=="Verefoo")
+	then
+		RegisterInfrastructureService IS = new RegisterInfrastructureService();
+interceptObject.setNfv(IS.registerInfrastructure(interceptObject.getInfo(), component1));
+end
+
+// rule values at A12, header at A6
+rule "Register Policy"
+	when
+		interceptObject: InterceptionRequest(command=="/register/policy")
+		component1: Component(name=="Verefoo")
+		component2: Component(name=="ContextBroker")
+	then
+		RegisterPolicyService RP = new RegisterPolicyService();
+ResponseEntity<String> res = RP.registerPolicy(interceptObject.getPolicy(), component1);
+InfrastructureInfoRequest IIR = new InfrastructureInfoRequest(res, component2);
+interceptObject.setInfo(IIR.getInfrastructureInfo());
+RegisterInfrastructureService IS = new RegisterInfrastructureService();
+interceptObject.setNfv(IS.registerInfrastructure(interceptObject.getInfo(), component1));
+InstanceFirewallsService IFS = new InstanceFirewallsService(component2, interceptObject.getNfv().getBody());
+IFS.instanceFirewallsFromNFV();
+end
+
+// rule values at A13, header at A6
+rule "Register Event - Add a instance"
+	when
+		interceptObject: InterceptionRequest(command=="/register/event", event.type=="add")
+		component1: Component(name=="Verefoo")
+		component2: Component(name=="Astrid_DB")
+		component3: Component(name=="ContextBroker")
+	then
+		RegisterEventService REES = new RegisterEventService();
+String graphName = REES.registerEvent(interceptObject.getEvent(), component2);
+InfrastructureInfoRequest IIR = new InfrastructureInfoRequest(component3);
+interceptObject.setInfo(IIR.getInfrastructureInfo(graphName));
+RegisterInfrastructureService IS = new RegisterInfrastructureService();
+interceptObject.setNfv(IS.registerInfrastructure(interceptObject.getInfo(), component1));
+InstanceFirewallsService IFS = new InstanceFirewallsService(component3, interceptObject.getNfv().getBody());
+IFS.instanceFirewallsFromNFV();
+end
+
+// rule values at A14, header at A6
+rule "Register Event - Remove a instance"
+	when
+		interceptObject: InterceptionRequest(command=="/register/event", event.type=="delete")
+		component1: Component(name=="Verefoo")
+		component2: Component(name=="Astrid_DB")
+		component3: Component(name=="ContextBroker")
+	then
+		RegisterEventService REES = new RegisterEventService();
+String graphName = REES.registerEvent(interceptObject.getEvent(), component2);
+InfrastructureInfoRequest IIR = new InfrastructureInfoRequest(component3);
+interceptObject.setInfo(IIR.getInfrastructureInfo(graphName));
+RegisterInfrastructureService IS = new RegisterInfrastructureService();
+interceptObject.setNfv(IS.registerInfrastructure(interceptObject.getInfo(), component1));
+RemoveFirewallsService RFS = new RemoveFirewallsService(component3);
+RFS.removeFirewallfromInfrastructureEvent(interceptObject.getEvent());
+InstanceFirewallsService IFS = new InstanceFirewallsService(component3, interceptObject.getNfv().getBody());
+IFS.instanceFirewallsFromNFV();
+end
+
+// rule values at A15, header at A6
+rule "Message Attack DDoS LOIC - count"
+	when
+		k:KafkaMessage(ip:source_ip, attack=="ddos loic")
+numberKafka: KafkaCounter()
+	then
+		numberKafka.incrementKafkaCounter();
+System.out.println("Drools - Receive a notification of attack from IP: " + ip + ". numberKafka = " + numberKafka.getKafkaCounter());
+end
+
+// rule values at A16, header at A6
+rule "Attack DDoS LOIC - countermeasures"
+	when
+		component1: Component(name=="ContextBroker")
+		kc:KafkaCounter(counter > 4)
+k:KafkaMessage()
+	then
+		InstanceFirewallsService IFS = new InstanceFirewallsService(component1, null);
+IFS.instanceFirewallFromKafkaEvent(k);
+end
+
