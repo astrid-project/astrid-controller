@@ -56,13 +56,26 @@ For to execute its operations, the Security Controller need of Context Broker mo
 
 The API integrated for now are the following:
 
-| Resources     | URLs             | XML repr            | Meaning                                        |
-|---------------|------------------|---------------------|------------------------------------------------|
-| infrastucture | /insfrastructure | InfrastructureInfo  | XML file describing infrastructure information |
-| policy        | /policy          |                     | yaml file describing the policy                |
-| event         | /event           | InfrastructureEvent | XML file describing changes in the NFV         |
+| Resources     | Relative URLs              | Meaning                                        |
+| ------------- | -------------------------- | ---------------------------------------------- |
+| controller    | controller                 | The framework (main resource)                  |
+| infrastucture | controller/insfrastructure | XML file describing infrastructure information |
+| policy        | controller/policy          | yaml file describing the (reachability) policy |
+| event         | controller /event          | XML file describing events occured in ASTRID   |
 
-You can find more details and try them using the Swagger, that you can reachable to this URL: http://localhost:8083/controller/swagger-ui.html (after you launched the Astrid Controller obviously).
+You can find more details and try them using the Swagger, that you can reachable to this URL: http://localhost:8083/controller/swagger-ui.html (after you launched the Astrid Controller).
+
+|         Resource          | Verb  | Req.Body | Query params |                        Meaning                         |      Verb      | Resp.Body  |
+| :-----------------------: | :---: | :------: | :----------: | :----------------------------------------------------: | :------------: | :--------: |
+|        controller         |  GET  |          |              |                 Get the main resource                  |     200 OK     | Controller |
+| controller/infrastructure | POST  |          |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
+| controller/infrastructure | POST  |          |              |      POST infrastructure information in valid XML      |     200 OK     |            |
+|                           |       |          |              |                                                        |                |            |
+|     controller/event      | POST  |          |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
+|     controller/event      | POST  |          |              |        POST event related to the security agent        |     200 OK     |            |
+|                           |       |          |              |                                                        |                |            |
+|     controller/policy     | POST  |          |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
+|     controller/policy     | POST  |          |              |  POST reachability policy from the Security Dashboard  |     200 OK     |            |
 
 ##Test
 There are a specific class that testing the behavior of the Astrid Controller. The test performed are the following:
