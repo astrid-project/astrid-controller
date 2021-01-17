@@ -65,17 +65,20 @@ The API integrated for now are the following:
 
 You can find more details and try them using the Swagger, that you can reachable to this URL: http://localhost:8083/controller/swagger-ui.html (after you launched the Astrid Controller).
 
-|         Resource          | Verb  | Req.Body | Query params |                        Meaning                         |      Verb      | Resp.Body  |
-| :-----------------------: | :---: | :------: | :----------: | :----------------------------------------------------: | :------------: | :--------: |
-|        controller         |  GET  |          |              |                 Get the main resource                  |     200 OK     | Controller |
-| controller/infrastructure | POST  |          |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
-| controller/infrastructure | POST  |          |              |      POST infrastructure information in valid XML      |     200 OK     |            |
-|                           |       |          |              |                                                        |                |            |
-|     controller/event      | POST  |          |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
-|     controller/event      | POST  |          |              |        POST event related to the security agent        |     200 OK     |            |
-|                           |       |          |              |                                                        |                |            |
-|     controller/policy     | POST  |          |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
-|     controller/policy     | POST  |          |              |  POST reachability policy from the Security Dashboard  |     200 OK     |            |
+|         Resource          | Verb  |      Req.Body      | Query params |                        Meaning                         |      Verb      | Resp.Body  |
+| :-----------------------: | :---: | :----------------: | :----------: | :----------------------------------------------------: | :------------: | :--------: |
+|        controller         |  GET  |                    |              |                 Get the main resource                  |     200 OK     | Controller |
+| controller/infrastructure | POST  |                    |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
+| controller/infrastructure | POST  | InfrastructureInfo |              |      POST infrastructure information in valid XML      |     200 OK     |            |
+|                           |       |                    |              |                                                        |                |            |
+|     controller/event      | POST  |                    |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
+|     controller/event      | POST  |       Event        |              |        POST event related to the security agent        |     200 OK     |            |
+|                           |       |                    |              |                                                        |                |            |
+|     controller/policy     | POST  |                    |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
+|     controller/policy     | POST  |       Policy       |              |  POST reachability policy from the Security Dashboard  |     200 OK     |            |
+
+
+
 
 ##Test
 There are a specific class that testing the behavior of the Astrid Controller. The test performed are the following:
