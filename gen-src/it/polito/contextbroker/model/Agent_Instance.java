@@ -1,4 +1,5 @@
 package it.polito.contextbroker.model;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -7,7 +8,14 @@ public class Agent_Instance {
 	String id;
 	String agent_catalog_id;
 	String exec_env_id;
+	List<actions> actions;
 	
+	public List<actions> getActions() {
+		return actions;
+	}
+	public void setActions(List<actions> actions) {
+		this.actions = actions;
+	}
 	public String getId() {
 		return id;
 	}
