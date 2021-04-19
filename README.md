@@ -41,7 +41,11 @@ The field 'name' must be 'Astrid_DB'. In the field 'Username' and 'Password' you
 Before you started the Astrid Controller, run Neo4j database with method in according to your O.S.
 
 ## Integration with Apache Kafka
-The current version of Astrid-controller is listening to a Kafka topic with name 'testing-result'. Into this topic the Astrid-controller waits to receive the notifications of some attacks; for now the only attack that Astrid-controller is able to block is the DDoS LOICK attack.
+The current version of Astrid-controller is listening to a Kafka topics
+
+'testing-result': it waits to receive the notifications of some attacks; for now the only attack that Astrid-controller is able to block is the DDoS LOICK attack.
+'Status': data expected by the ATK on the bus
+'LEA': topic for the "Interception Request" messages defined for actions "start" and "stop"
 
 The default configuration of Astrid Controller has the listening disable, but you can change it simply modifying the variable "listen.auto.kafka" into "application.properties" file that you can find to this path: [root]/src/main/resources.
 
