@@ -214,7 +214,16 @@ public class RegistrationController {
 		 InterceptionRequest IR = new InterceptionRequest(null, null, null, "kafka", null, null);
 		 IR.setMess(mess);
 		 droolsService.sendInterceptionRequest(IR, getContextBroker(), null, null);
-		 //logger.info("++++++++++ Receive Kafka Messages: " + cr.value().toString());
+		 logger.info("++++++++++ Receive testing-result Kafka Messages: " + cr.value().toString());
 	 }
 
+	 @KafkaListener(topics = "Status", autoStartup = "${listen.auto.kafka}")
+	 public void listen2 (ConsumerRecord<?, ?> cr) throws Exception {
+		 logger.info("++++++++++ Receive Status Kafka Messages: " + cr.value().toString());
+	 }
+	 
+	 @KafkaListener(topics = "Status", autoStartup = "${listen.auto.kafka}")
+	 public void listen3 (ConsumerRecord<?, ?> cr) throws Exception {
+		 logger.info("++++++++++ Receive LEA Kafka Messages: " + cr.value().toString());
+	 }
 }

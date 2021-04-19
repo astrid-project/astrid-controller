@@ -21,7 +21,7 @@ import it.polito.astrid.models.KafkaCounter;
 
 @Service
 public class DroolsService {
-	private  static  final String drlFile = "interception.drl";
+	private  static  final String drlFile = "astrid-config.drl";
 	private  static  final String DecisionTableFile = "interception.xls";
     
     private final KieContainer kieContainer;
@@ -43,7 +43,7 @@ public class DroolsService {
         KieServices kieServices = KieServices.Factory.get();
 
         KieFileSystem kieFileSystem = kieServices.newKieFileSystem();
-        kieFileSystem.write(ResourceFactory.newClassPathResource(DecisionTableFile, getClass()));
+        kieFileSystem.write(ResourceFactory.newClassPathResource(drlFile, getClass()));
         
         /*Cristian modify*/
         KieModuleModel kieModuleModel = kieServices.newKieModuleModel();
