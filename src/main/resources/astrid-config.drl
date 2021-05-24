@@ -77,10 +77,10 @@ end
 rule "Message Attack DDoS LOIC - count"
         when
                 k:KafkaMessage(ip:source_ip, attack=="ddos loic")
-numberKafka: KafkaCounter()
+				numberKafka: KafkaCounter()
         then
                 numberKafka.incrementKafkaCounter();
-System.out.println("Drools - Receive a notification of attack from IP: " + ip + ". numberKafka = " + numberKafka.getKafkaCounter());
+				System.out.println("Drools - Receive a notification of attack from IP: " + ip + ". numberKafka = " + numberKafka.getKafkaCounter());
 end
 
 // rule values at A16, header at A6
@@ -88,10 +88,21 @@ rule "Attack DDoS LOIC - countermeasures"
         when
                 component1: Component(name=="ContextBroker")
                 kc:KafkaCounter(counter > 4)
-k:KafkaMessage()
+				k:KafkaMessage()
         then
                 InstanceFirewallsService IFS = new InstanceFirewallsService(component1, null);
-System.out.println("^^^^^^^^^^^^^^^^^^^^^");
-IFS.instanceFirewallFromKafkaEvent(k);
+				System.out.println("^^^^^^^^^^^^^^^^^^^^^");
+				IFS.instanceFirewallFromKafkaEvent(k);
+end
+
+
+rule "Status message from KAFKA"
+        when
+        		k:KafkaMessage(id:source_ip, status.networkStatus=="ALARM")
+                component1: Component(name=="ContextBroker")
+        then
+                InstanceFirewallsService IFS = new InstanceFirewallsService(component1, null);
+				System.out.println("^^^^^^^^^^^^^^^^^^^^^");
+				IFS.loadEBPFcode(status);
 end
 

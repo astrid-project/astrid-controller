@@ -8,7 +8,15 @@ public class KafkaMessage {
 	private String protocol;
 	private String timestamp;
 	private String attack;
+	private NetworkStatus status;
 	
+
+	public NetworkStatus getStatus() {
+		return status;
+	}
+	public void setStatus(NetworkStatus status) {
+		this.status = status;
+	}
 	public String getSource_ip() {
 		return source_ip;
 	}

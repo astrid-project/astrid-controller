@@ -32,7 +32,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.polito.astrid.controllers.ContextBrokerException;
 import it.polito.astrid.models.KafkaMessage;
-import it.polito.astrid.models.NetworkStatus;
 import it.polito.contextbroker.model.Agent_Instance;
 import it.polito.contextbroker.model.Execution_Environment;
 import it.polito.contextbroker.model.actions;
@@ -42,182 +41,19 @@ import it.polito.verefoo.jaxb.Graph;
 import it.polito.verefoo.jaxb.NFV;
 import it.polito.verefoo.jaxb.Node;
 
-public class InstanceFirewallsService {
+public class InstanceEbpf {
 	
 	private static final Logger logger=LoggerFactory.getLogger(InfrastructureInfoRequest.class);
 	
 	private Component ContextBroker;
-	private NFV graph;
 	
-	public InstanceFirewallsService(Component ContextBroker, NFV graph){
+	
+	public InstanceEbpf(Component ContextBroker){
 		this.ContextBroker = ContextBroker;
-		this.graph = graph;
+	
 	}
 	
 	
-	public void instanceFirewallsFromNFV() throws ContextBrokerException{
-		//recover the node that are firewalls from NFV
-		Iterator<Graph> it = graph.getGraphs().getGraph().iterator();
-		int i = 0;
-		Date dateNow = new Date();
-		SimpleDateFormat ft = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss");
-		List<Agent_Instance> agentInstance = new ArrayList<>();
-		RestTemplate restTemplate = new RestTemplate();
-		Jaxb2RootElementHttpMessageConverter converter = new Jaxb2RootElementHttpMessageConverter();
-		converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
-		restTemplate.setMessageConverters(Arrays.asList(converter, new StringHttpMessageConverter()));
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		HttpEntity<String> requestBody = null;
-		ResponseEntity<String> result = null;
-		JSONObject query = null;
-		JSONObject defAction = null;
-		List<JSONObject> rules = new ArrayList<>();
-		JSONObject rule = null;
-		JSONArray actions = null;
-		Graph schema = it.next();
-		Iterator<Node> it_node = schema.getNode().iterator();
-		Iterator<Elements> it_ele = null;
-		boolean update=false;
-		logger.info("+++++++++ started to instance the firewalls");
-		
-		
-		//recover the agent instance
-		agentInstance = getAgentInstance();
-		while(it_node.hasNext()) {
-			Node n = it_node.next();
-			update=false;
-			if(n.getFunctionalType().toString().compareTo("FIREWALL") == 0) {
-				//create query
-				query = new JSONObject();
-				//check if a firewall already exist of this node
-				logger.info("+++++++++ check if firewall of node with ID: " + n.getConfiguration().getName() + " already exist");
-				if (checkFirewallExist(n.getConfiguration().getName(), agentInstance)) {
-					//firewall already exist, so update it
-					update=true;
-					logger.info("+++++++++ firewall of node with ID: " + n.getConfiguration().getName() + " already exist. Updating in progress...");
-					try {
-						query.put("id", "firewall@" + n.getConfiguration().getName());
-					}catch(Exception ex) {
-						logger.error("+++++++++ error while costruct query: " + ex.getMessage());
-						throw new ContextBrokerException(ex.getMessage());
-					}
-				}else {
-					//there isn't a firewall configured
-					logger.info("+++++++++ firewall of node with ID: " + n.getConfiguration().getName() + " not exist. Creating in progress...");
-					try {
-						query.put("id", "firewall@" + n.getConfiguration().getName());
-						query.put("agent_catalog_id", "firewall");
-						query.put("exec_env_id", n.getConfiguration().getName());
-						query.put("status", "started");
-					}catch(Exception ex) {
-						logger.error("+++++++++ error while costruct query: " + ex.getMessage());
-						throw new ContextBrokerException(ex.getMessage());
-					}
-				}
-				
-				//create actions
-				//check and set the default action
-				if(n.getConfiguration().getFirewall().getDefaultAction() != null){
-					defAction = new JSONObject();
-					actions = new JSONArray();
-					try {
-						defAction.put("id", "default");
-						defAction.put("action", n.getConfiguration().getFirewall().getDefaultAction());
-						defAction.put("timestamp", ft.format(dateNow));
-						actions.put(defAction);
-					}catch(Exception ex) {
-						logger.error("+++++++++ error while costruct the query: " + ex.getMessage());
-						throw new ContextBrokerException(ex.getMessage());
-					}
-				}
-				
-				//insert into the query the rules
-				it_ele = n.getConfiguration().getFirewall().getElements().iterator();
-				i = 0;
-				rules.clear();
-				//create the rules
-				while(it_ele.hasNext()){
-					Elements ele = it_ele.next();
-					rule = new JSONObject();
-					try {
-						rule.put("id", "insert");
-						rule.put("n", "rule" + (i+1) + "@" + n.getConfiguration().getName());
-						rule.put("src", getAddressWithMask(ele.getSource()));
-						rule.put("dst", getAddressWithMask(ele.getDestination()));
-						rule.put("action", ele.getAction());
-						rule.put("timestamp", ft.format(dateNow));
-						//rule.put("data", "rule_" + (i+1));
-						rules.add(rule);
-						actions.put(rules.get(i));
-						i++;
-					}catch(Exception ex) {
-						logger.error("+++++++++ error while costruct the query: " + ex.getMessage());
-						throw new ContextBrokerException(ex.getMessage());
-					}
-				}
-				try {
-					query.put("actions", actions);
-				}catch(Exception ex) {
-					logger.error("+++++++++ error while costruct the query: " + ex.getMessage());
-					throw new ContextBrokerException(ex.getMessage());
-				}
-				
-				//send the request
-				requestBody = new HttpEntity<String>(query.toString(), headers);
-				try {
-					if(update==false) {
-						result = restTemplate.postForEntity("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent", requestBody, String.class);
-						logger.info("+++++++++ Firewall successfully instanced!");
-					}else {
-						restTemplate.put("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent", requestBody);
-						logger.info("+++++++++ Firewall successfully updated!");
-					}
-					
-				}catch (HttpClientErrorException e) {
-					if(e.getStatusCode() == HttpStatus.UNPROCESSABLE_ENTITY) {
-						logger.info("+++++++++ Unable to reach the firewall, but insert it into Context Broker");
-					}else {
-						logger.error("+++++++++ error while instance the firewalls: " + e.getMessage());
-						throw new ContextBrokerException(e.getMessage());
-					}
-				}catch (HttpServerErrorException e) {
-					logger.error("+++++++++ error while instance the firewalls: " + e.getMessage());
-					throw new ContextBrokerException(e.getMessage());
-				}
-			}
-		}
-	}
-	public void  loadEBPFcode(NetworkStatus status) throws ContextBrokerException {
-		List<Agent_Instance> agentInstance = new ArrayList<>();
-		List<Execution_Environment> exec_env = new ArrayList<>();
-		int i = 0;
-		Date dateNow = new Date();
-		SimpleDateFormat ft = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss");
-		RestTemplate restTemplate = new RestTemplate();
-		Jaxb2RootElementHttpMessageConverter converter = new Jaxb2RootElementHttpMessageConverter();
-		converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
-		restTemplate.setMessageConverters(Arrays.asList(converter, new StringHttpMessageConverter()));
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		HttpEntity<String> requestBody = null;
-		ResponseEntity<String> result = null;
-		JSONObject query = null;
-		JSONObject defAction = null;
-		JSONObject rule = null;
-		JSONArray actions = null;
-		List<JSONObject> rules = new ArrayList<>();
-		boolean trovato = false;
-		//recovery the agent instance
-		agentInstance = getAgentInstance();
-		//recovery the execution environment
-		exec_env = getExecutionEnvironment();
-		Iterator<Execution_Environment> it = exec_env.iterator();
-		
-		
-		
-		
-	}
 	public void instanceFirewallFromKafkaEvent(KafkaMessage kmes) throws ContextBrokerException{
 		logger.info("+++++++++ DDoS LOIC attack detected!");
 		List<Agent_Instance> agentInstance = new ArrayList<>();

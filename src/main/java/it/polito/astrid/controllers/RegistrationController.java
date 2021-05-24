@@ -39,9 +39,11 @@ import it.polito.verefoo.astrid.jaxb.InfrastructureInfo;
 import it.polito.verefoo.astrid.jaxb.Components;
 import it.polito.verefoo.astrid.jaxb.Components.*;
 import it.polito.verefoo.jaxb.NFV;
+import net.minidev.json.JSONObject;
 import springfox.documentation.annotations.ApiIgnore;
 import it.polito.astrid.models.InterceptionRequest;
 import it.polito.astrid.models.KafkaMessage;
+import it.polito.astrid.models.NetworkStatus;
 import it.polito.astrid.service.DroolsService;
 
 //mvn clean package && java -jar target\controller-0.0.1-SNAPSHOT.jar
@@ -108,6 +110,7 @@ public class RegistrationController {
 			@ApiResponse(code = 400, message = "Bad Request"), })
 	@ResponseBody
 	public ResponseEntity<NFV> registerEvent(@RequestBody InfrastructureEvent event) throws ResourceNotFoundException, AstridComponentNotFoundException {
+		//String userId, String providerId, String serviceId, String command, InfrastructureInfo info, String policy
 		InterceptionRequest IR = new InterceptionRequest(null, null, null, "/register/event", null, null);
 		IR.setEvent(event);
 		droolsService.sendInterceptionRequest(IR, getVerefooInfo(), getAstridDB(), getContextBroker());
@@ -217,9 +220,21 @@ public class RegistrationController {
 		 logger.info("++++++++++ Receive testing-result Kafka Messages: " + cr.value().toString());
 	 }
 
-	 @KafkaListener(topics = "Status", autoStartup = "${listen.auto.kafka}")
+	 @KafkaListener(topics = "AstridProxyPublishStatus", autoStartup = "${listen.auto.kafka}")
 	 public void listen2 (ConsumerRecord<?, ?> cr) throws Exception {
 		 logger.info("++++++++++ Receive Status Kafka Messages: " + cr.value().toString());
+		 
+		 ObjectMapper objectMapper = new ObjectMapper();
+		 
+		 NetworkStatus status = objectMapper.readValue(cr.value().toString(), NetworkStatus.class);
+		 System.out.println("##### "+status.networkStatus+" ");
+		 KafkaMessage mess = new KafkaMessage();
+		 mess.setStatus(status);
+		 
+		 InterceptionRequest IR = new InterceptionRequest(null, null, null, "kafka", null, null);
+		 IR.setMess(mess);
+		 droolsService.sendInterceptionRequest(IR, getContextBroker(), null, null);
+		 
 	 }
 	 
 	 @KafkaListener(topics = "Status", autoStartup = "${listen.auto.kafka}")
