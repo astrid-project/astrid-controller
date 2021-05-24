@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
@@ -7,14 +7,19 @@ metadata:
 spec:
   replicas: 1
   strategy: {}
+  selector:
+    matchLabels:
+      app: astrid-controller
   template:
     metadata:
       labels:
-        run: astrid-controller
+        app: astrid-controller
     spec:
       containers:
       - image: positive/controller
+        imagePullPolicy: IfNotPresent
         name: astrid-controller
         ports:
         - containerPort: 8080
-        
+      nodeSelector:
+        name: compute01
