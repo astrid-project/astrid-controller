@@ -101,9 +101,15 @@ rule "NTP Alarm"
         		k:KafkaMessage(status.mUseCase=="NTP"&&status.networkStatus=="ALARM")
                 component1: Component(name=="ContextBroker")
         then
+<<<<<<< HEAD
         		InstanceEbpf IFS = new InstanceEbpf(component1);
 				System.out.println("^^^^^^ NTP ALARM");
 				IFS.ebpfAlarm("ntp_bau_and_warn","eno1");
+=======
+                InstanceFirewallsService IFS = new InstanceFirewallsService(component1, null);
+				System.out.println("^^^^^^^^^^^^^^^^^^^^^");
+
+>>>>>>> branch 'master' of https://github.com/astrid-project/astrid-controller.git
 end
 
 rule "NTP BAU"
