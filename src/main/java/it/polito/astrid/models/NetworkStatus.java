@@ -14,13 +14,8 @@ Root root = om.readValue(myJsonString), Root.class); */
     public String area;
 }
 
-class CorrelationTypeStatu{
-    @JsonProperty("use-case") 
-    public String useCase;
-    public List<Correlation> correlations;
-}
-
- class CorrelationAreaStatu{
+ 
+ class CorrelationAreaStatus{
     @JsonProperty("use-case") 
     public String useCase;
     public List<Correlation> correlations;
@@ -29,9 +24,16 @@ class CorrelationTypeStatu{
 public class NetworkStatus{
     @JsonProperty("network-status") 
     public String networkStatus;
-    @JsonProperty("correlation-type-status") 
-    public List<CorrelationTypeStatu> correlationTypeStatus;
+    public String mUseCase;
+    public String getmUseCase() {
+		return mUseCase;
+	}
+	public void setmUseCase(String mUseCase) {
+		this.mUseCase = mUseCase;
+	}
+	@JsonProperty("correlation-type-status") 
+    public List<CorrelationTypeStatus> correlationTypeStatus;
     @JsonProperty("correlation-area-status") 
-    public List<CorrelationAreaStatu> correlationAreaStatus;
+    public List<CorrelationAreaStatus> correlationAreaStatus;
     public int time;
 }

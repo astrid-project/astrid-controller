@@ -8,9 +8,12 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +28,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -34,7 +38,9 @@ import it.polito.astrid.controllers.ContextBrokerException;
 import it.polito.astrid.models.KafkaMessage;
 import it.polito.contextbroker.model.Agent_Instance;
 import it.polito.contextbroker.model.Execution_Environment;
+import it.polito.contextbroker.model.Execution_Environment.LCP;
 import it.polito.contextbroker.model.actions;
+import it.polito.verefoo.astrid.jaxb.InfrastructureInfo;
 import it.polito.verefoo.astrid.jaxb.Components.Component;
 import it.polito.verefoo.jaxb.Elements;
 import it.polito.verefoo.jaxb.Graph;
@@ -54,10 +60,11 @@ public class InstanceEbpf {
 	}
 	
 	
-	public void instanceFirewallFromKafkaEvent(KafkaMessage kmes) throws ContextBrokerException{
+	public void ebpfAlarm(String type, String inter) throws ContextBrokerException, IOException, JSONException, InterruptedException{
 		logger.info("+++++++++ DDoS LOIC attack detected!");
 		List<Agent_Instance> agentInstance = new ArrayList<>();
 		List<Execution_Environment> exec_env = new ArrayList<>();
+		
 		int i = 0;
 		Date dateNow = new Date();
 		SimpleDateFormat ft = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss");
@@ -66,142 +73,108 @@ public class InstanceEbpf {
 		converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
 		restTemplate.setMessageConverters(Arrays.asList(converter, new StringHttpMessageConverter()));
 		HttpHeaders headers = new HttpHeaders();
+		
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		HttpEntity<String> requestBody = null;
 		ResponseEntity<String> result = null;
-		JSONObject query = null;
-		JSONObject defAction = null;
-		JSONObject rule = null;
-		JSONArray actions = null;
-		List<JSONObject> rules = new ArrayList<>();
-		boolean trovato = false;
 		//recovery the agent instance
 		agentInstance = getAgentInstance();
 		//recovery the execution environment
-		exec_env = getExecutionEnvironment();
-		Iterator<Execution_Environment> it = exec_env.iterator();
-		
-		//recovery the id of exec_env that has the IP egual to source IP of the kafka message
-		while(it.hasNext() && trovato==false) {
-			Execution_Environment node = it.next();
-			if((node.getHostname().compareTo(kmes.getSource_ip())==0) || (node.getHostname().compareTo(kmes.getDestination_ip())==0)) {
-				trovato = true;
-				query = new JSONObject();
-				defAction = new JSONObject();
-				actions = new JSONArray();
-				//check if already exist a firewall of that node
-				if (checkFirewallExist(node.getId(), agentInstance)==true) {
-					//firewall already exist, so update the rules
-					Agent_Instance fw = getFirewallwithExecEnvId(node.getId(), agentInstance);
-					try {
-						query.put("id", "firewall@" + node.getId());
-						//retrieve the action list
-						List<actions> act = fw.getActions();
-						Iterator<actions> act_it = act.iterator();
-						i=0;
-						while(act_it.hasNext()) {
-							actions action = act_it.next();
-							rule = new JSONObject();
-							try {
-								rule.put("id", action.getId());
-								if (action.getN() != null)
-									rule.put("n", action.getN());
-								if(action.getSrc() != null)
-									rule.put("src", action.getSrc());
-								if(action.getDst() != null)
-									rule.put("dst", action.getDst());
-								if(action.getAction() != null)
-									rule.put("action", action.getAction());
-								if(action.getTimestamp() != null)
-									rule.put("timestamp", action.getTimestamp());
-								rules.add(rule);
-								actions.put(rules.get(i));
-								i++;
-							}catch(Exception ex) {
-								logger.error("+++++++++ error while costruct the query: " + ex.getMessage());
-								throw new ContextBrokerException(ex.getMessage());
-							}
-						}
-						rule = new JSONObject();
-						if(node.getHostname().compareTo(kmes.getSource_ip())==0) {
-							//the node is the sender of the attack
-							rule.put("id", "insert");
-							rule.put("n", "rule" + i + "@" + node.getId());
-							rule.put("src", node.getHostname());
-							rule.put("dst", kmes.getDestination_port());
-							rule.put("action", "DENY");
-							rule.put("timestamp", ft.format(dateNow));
-						}else {
-							//the node is the target of the attack
-							rule.put("id", "insert");
-							rule.put("n", "rule" + i + "@" + node.getId());
-							rule.put("src", kmes.getSource_ip());
-							rule.put("dst", node.getHostname());
-							rule.put("action", "DENY");
-							rule.put("timestamp", ft.format(dateNow));
-						}
-						rules.add(rule);
-						actions.put(rules.get(i));
-						i++;
-						query.put("actions", actions);
-					}catch(Exception ex) {
-						logger.error("+++++++++ error while costruct query: " + ex.getMessage());
-						throw new ContextBrokerException(ex.getMessage());
-					}
-					//send the request
-					requestBody = new HttpEntity<String>(query.toString(), headers);
-					try {
-						restTemplate.put("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent", requestBody);
-						logger.info("+++++++++ Firewall to block attack successfully updated!");
-					}catch (HttpClientErrorException e) {
-						if(e.getStatusCode() == HttpStatus.UNPROCESSABLE_ENTITY) {
-							logger.info("+++++++++ Unable to reach the firewall, but insert it into Context Broker");
-						}else {
-							logger.error("+++++++++ error while instance the firewalls to block attack: " + e.getMessage());
-							throw new ContextBrokerException(e.getMessage());
-						}
-					}catch (HttpServerErrorException e) {
-						logger.error("+++++++++ error while instance the firewalls to block attack: " + e.getMessage());
-						throw new ContextBrokerException(e.getMessage());
-					}
-					
-				}else {
-					//firewall doesn't exist, so create it
-					try {
-						query.put("id", "firewall@" + node.getId());
-						query.put("agent_catalog_id", "firewall");
-						query.put("exec_env_id", node.getId());
-						query.put("status", "started");
-						defAction.put("id", "default");
-						defAction.put("action", "DENY");
-						defAction.put("timestamp", ft.format(dateNow));
-						actions.put(defAction);
-						query.put("actions", actions);
-					}catch(Exception ex) {
-						logger.error("+++++++++ error while costruct the query: " + ex.getMessage());
-						throw new ContextBrokerException(ex.getMessage());
-					}
-					//send the request
-					requestBody = new HttpEntity<String>(query.toString(), headers);
-					try {
-						result = restTemplate.postForEntity("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent", requestBody, String.class);
-						logger.info("+++++++++ Firewall to block attack successfully instanced!");
-					}catch (HttpClientErrorException e) {
-						if(e.getStatusCode() == HttpStatus.UNPROCESSABLE_ENTITY) {
-							logger.info("+++++++++ Unable to reach the firewall, but insert it into Context Broker");
-						}else {
-							logger.error("+++++++++ error while instance the firewall to block attack: " + e.getMessage());
-							throw new ContextBrokerException(e.getMessage());
-						}
-					}catch (HttpServerErrorException e) {
-						logger.error("+++++++++ error while instance the firewall to block attack: " + e.getMessage());
-						throw new ContextBrokerException(e.getMessage());
-					}
-				}
-			}
-		}
+		String exec_id = createExecutionEnvironment();
+		TimeUnit.SECONDS.sleep(50);
+		creatDynMon(exec_id,type,inter);
+	
 	}
 	
+	 public static int generateUniqueId() {      
+	        UUID idOne = UUID.randomUUID();
+	        String str=""+idOne;        
+	        int uid=str.hashCode();
+	        String filterStr=""+uid;
+	        str=filterStr.replaceAll("-", "");
+	        return Integer.parseInt(str);
+	    }
+	
+	private String createExecutionEnvironment() throws IOException {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.set("Authorization", "ASTRID " + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+		
+		RestTemplate restTemplate = new RestTemplate();
+		
+		
+		int uid = generateUniqueId();
+		Execution_Environment exec = new Execution_Environment();
+		Execution_Environment.LCP  lcp = exec.new LCP();
+		lcp.setPort(5000);
+		lcp.setHttps(false);
+		exec.setLcp(lcp);
+		exec.setDescription("polycube for ebpf "+uid);
+		exec.setId("sc-ebpf-"+uid);
+		exec.setType_id("container-docker");
+		exec.setHostname( "node-0.astrid-kube");
+		exec.setEnabled( "Yes");
+		
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.setSerializationInclusion(Include.NON_NULL);
+		
+		// Data attached to the request.
+		HttpEntity<String> requestBody = new HttpEntity<String>(mapper.writeValueAsString(exec), headers);
+		
+		ResponseEntity<String> result = null;
+		try {
+			// Send request with POST method.
+			result = restTemplate.postForEntity("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/exec-env", requestBody, String.class);
+			if (result.getStatusCode() == HttpStatus.OK) {
+				logger.info("++++++++++ Execution Enviroment created with id = "+"sc-ebpf-"+uid);
+			}else {
+				logger.error("++++++++++ Execution Enviroment  with an error: " + result.getBody());
+			}
+		}catch(Exception e) {
+			logger.error("++++++++++ error while contatcting Context Broker module: " + e.getMessage());
+			throw new IOException();
+		}
+		return "sc-ebpf-"+uid;
+	}
+	
+	private  void creatDynMon(String ebpf_id, String type, String interface_d) throws IOException, JSONException {
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.set("Authorization", "ASTRID " + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+		RestTemplate restTemplate = new RestTemplate();
+		
+		
+		int uid = generateUniqueId();
+		JSONObject dynObject = new JSONObject();
+		dynObject.put("ebpf_program_catalog_id", type);
+		dynObject.put("id", "dyn-id-"+uid);
+		dynObject.put("description", "Collect");
+		dynObject.put("exec_env_id", ebpf_id);
+		dynObject.put("interface", interface_d);
+		
+		// Data attached to the request.
+		HttpEntity<JSONObject> requestBody = new HttpEntity<JSONObject>( dynObject, headers);
+		
+		ResponseEntity<String> result = null;
+		try {
+			// Send request with POST method.
+			result = restTemplate.postForEntity("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/ebpf-program", requestBody, String.class);
+			if (result.getStatusCode() == HttpStatus.OK) {
+				System.out.println("++++++++++ DynMon created with id = "+"dyn-id-"+uid);
+				System.out.println("++++++++++ "+result.getBody() );
+			}else {
+				System.out.println("++++++++++ DynMon  with an error: " + result.getBody());
+			}
+		}catch(Exception e) {
+			System.out.println("++++++++++ error while contatcting Context Broker module: " + e.getMessage());
+			System.out.println("++++++++++ error while contatcting Context Broker module: " + e.toString());
+			throw new IOException();
+		}
+		
+	}
+
+
 	private String getAddressWithMask(String ip){
 		String[] parti = ip.split(Pattern.quote("."));
 		if(parti[3].compareTo("-1")==0) {

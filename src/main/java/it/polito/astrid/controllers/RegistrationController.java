@@ -17,6 +17,7 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -221,19 +222,45 @@ public class RegistrationController {
 	 }
 
 	 @KafkaListener(topics = "AstridProxyPublishStatus", autoStartup = "${listen.auto.kafka}")
-	 public void listen2 (ConsumerRecord<?, ?> cr) throws Exception {
-		 logger.info("++++++++++ Receive Status Kafka Messages: " + cr.value().toString());
+	 public void listen2 (ConsumerRecord<?, ?> cr)  {
+		String inputS = cr.value().toString();
+		 logger.info("++++++++++ Receive Status Kafka Messages:         " + cr.value().toString());
+		 logger.info("            ++++++++++ ");
+		 inputS = inputS.replaceAll("^\"|\"$", "");
 		 
+		 String unescaped = StringEscapeUtils.unescapeJson(inputS);
+        
+	
 		 ObjectMapper objectMapper = new ObjectMapper();
+		 NetworkStatus status = null;
+		try {
+			
+			status = objectMapper.readValue(unescaped, NetworkStatus.class);
+			 logger.info("            ++++++++++ ");
+			 
+			
+			 if(status.networkStatus.equals("WARN")||status.networkStatus.equals("BAU")||status.networkStatus.equals("ALARM")) {
+				status.setmUseCase( status.correlationTypeStatus.get(0).getUseCase());
+				
+			 }
+			 System.out.println("##### "+status.networkStatus+" "+status.getmUseCase());
+			 KafkaMessage mess = new KafkaMessage();
+			 mess.setStatus(status);
+			 
+			 InterceptionRequest IR = new InterceptionRequest(null, null, null, "kafka", null, null);
+			 IR.setMess(mess);
+			 droolsService.sendInterceptionRequest(IR, getContextBroker(), null, null);
+			 
+		} catch (IOException e) {
+			 logger.info("   Error in parsing Json");
+			//e.printStackTrace();
+		} catch (AstridComponentNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		 
-		 NetworkStatus status = objectMapper.readValue(cr.value().toString(), NetworkStatus.class);
-		 System.out.println("##### "+status.networkStatus+" ");
-		 KafkaMessage mess = new KafkaMessage();
-		 mess.setStatus(status);
 		 
-		 InterceptionRequest IR = new InterceptionRequest(null, null, null, "kafka", null, null);
-		 IR.setMess(mess);
-		 droolsService.sendInterceptionRequest(IR, getContextBroker(), null, null);
+		 
 		 
 	 }
 	 

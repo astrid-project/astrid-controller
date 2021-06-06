@@ -67,7 +67,14 @@ public class Execution_Environment {
 		Date last_heartbeat;
 		String username;
 		String password;
+		 boolean https;
 		
+		public boolean isHttps() {
+			return https;
+		}
+		public void setHttps(boolean https) {
+			this.https = https;
+		}
 		public Integer getPort() {
 			return port;
 		}

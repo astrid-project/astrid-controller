@@ -96,13 +96,42 @@ rule "Attack DDoS LOIC - countermeasures"
 end
 
 
-rule "Status message from KAFKA"
+rule "NTP Alarm"
         when
-        		k:KafkaMessage(id:source_ip, status.networkStatus=="ALARM")
+        		k:KafkaMessage(status.mUseCase=="NTP"&&status.networkStatus=="ALARM")
                 component1: Component(name=="ContextBroker")
         then
-                InstanceFirewallsService IFS = new InstanceFirewallsService(component1, null);
-				System.out.println("^^^^^^^^^^^^^^^^^^^^^");
-				IFS.loadEBPFcode(status);
+        		InstanceEbpf IFS = new InstanceEbpf(component1);
+				System.out.println("^^^^^^ NTP ALARM");
+				IFS.ebpfAlarm("ntp_bau_and_warn","eno1");
 end
 
+rule "NTP BAU"
+        when
+        		k:KafkaMessage(status.mUseCase=="NTP" && status.networkStatus=="BAU")
+                component1: Component(name=="ContextBroker")
+        then
+        		InstanceEbpf IFS = new InstanceEbpf(component1);
+				System.out.println("^^^^^^ NTP BAU");
+				IFS.ebpfAlarm("ntp_bau","eno1");
+end
+
+rule "DNS BAU"
+        when
+        		k:KafkaMessage(status.mUseCase=="DNS" && status.networkStatus=="BAU")
+                component1: Component(name=="ContextBroker")
+        then
+        		InstanceEbpf IFS = new InstanceEbpf(component1);
+				System.out.println("^^^^^^ DNS BAU");
+				IFS.ebpfAlarm("dns_bau","eno1");
+end
+
+rule "DNS WARN"
+        when
+        		k:KafkaMessage(status.mUseCase=="DNS" && status.networkStatus=="ALARM")
+                component1: Component(name=="ContextBroker")
+        then
+        		InstanceEbpf IFS = new InstanceEbpf(component1);
+				System.out.println("^^^^^^ DNS WARN");
+				IFS.ebpfAlarm("dns_warn","eno1");
+end
