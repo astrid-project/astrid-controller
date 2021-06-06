@@ -16,10 +16,13 @@ spec:
         app: astrid-controller
     spec:
       containers:
-      - image: positive/controller
+      - image: astrid-controller_web
         imagePullPolicy: IfNotPresent
         name: astrid-controller
         ports:
         - containerPort: 8080
       nodeSelector:
         name: compute01
+      dnsConfig:
+        searches:
+        - astrid-kube.svc.cluster.local

@@ -103,6 +103,6 @@ rule "Status message from KAFKA"
         then
                 InstanceFirewallsService IFS = new InstanceFirewallsService(component1, null);
 				System.out.println("^^^^^^^^^^^^^^^^^^^^^");
-				IFS.loadEBPFcode(status);
+
 end
 
