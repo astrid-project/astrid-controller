@@ -103,6 +103,7 @@ rule "NTP Alarm"
         then
         		InstanceEbpf IFS = new InstanceEbpf(component1);
 				System.out.println("^^^^^^ NTP ALARM");
+				IFS.ebpfAlarmRm();
 				IFS.ebpfAlarm("ntp_bau_and_warn","eno1");
 end
 
@@ -113,6 +114,7 @@ rule "NTP BAU"
         then
         		InstanceEbpf IFS = new InstanceEbpf(component1);
 				System.out.println("^^^^^^ NTP BAU");
+				IFS.ebpfAlarmRm();
 				IFS.ebpfAlarm("ntp_bau","eno1");
 end
 
@@ -123,6 +125,7 @@ rule "DNS BAU"
         then
         		InstanceEbpf IFS = new InstanceEbpf(component1);
 				System.out.println("^^^^^^ DNS BAU");
+				IFS.ebpfAlarmRm();
 				IFS.ebpfAlarm("dns_bau","eno1");
 end
 
@@ -133,5 +136,6 @@ rule "DNS WARN"
         then
         		InstanceEbpf IFS = new InstanceEbpf(component1);
 				System.out.println("^^^^^^ DNS WARN");
+				IFS.ebpfAlarmRm();
 				IFS.ebpfAlarm("dns_warn","eno1");
 end

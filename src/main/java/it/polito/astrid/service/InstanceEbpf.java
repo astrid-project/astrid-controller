@@ -6,11 +6,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -19,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -52,7 +56,7 @@ public class InstanceEbpf {
 	private static final Logger logger=LoggerFactory.getLogger(InfrastructureInfoRequest.class);
 	
 	private Component ContextBroker;
-	
+	 private Set<String> setDID = new HashSet();
 	
 	public InstanceEbpf(Component ContextBroker){
 		this.ContextBroker = ContextBroker;
@@ -60,29 +64,56 @@ public class InstanceEbpf {
 	}
 	
 	
-	public void ebpfAlarm(String type, String inter) throws ContextBrokerException, IOException, JSONException, InterruptedException{
-		logger.info("+++++++++ DDoS LOIC attack detected!");
-		List<Agent_Instance> agentInstance = new ArrayList<>();
-		List<Execution_Environment> exec_env = new ArrayList<>();
-		
+	public void ebpfAlarmRm() throws ContextBrokerException, IOException, JSONException, InterruptedException{
+		logger.info("+++++++++ EBPF removing");
 		int i = 0;
-		Date dateNow = new Date();
-		SimpleDateFormat ft = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss");
-		RestTemplate restTemplate = new RestTemplate();
-		Jaxb2RootElementHttpMessageConverter converter = new Jaxb2RootElementHttpMessageConverter();
-		converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
-		restTemplate.setMessageConverters(Arrays.asList(converter, new StringHttpMessageConverter()));
+		 for(i=0;i<9;i++) {
+			 for(String newId : setDID) {
+				 logger.info("----- Removing id="+newId);
+				 if(remDynMon(newId)) {
+					 setDID.remove(newId);
+				 }
+			 }
+				
+			 
+         }
+	
+	}
+	
+	private boolean remDynMon(String id) throws IOException {
 		HttpHeaders headers = new HttpHeaders();
-		
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		HttpEntity<String> requestBody = null;
+		headers.set("Authorization", "ASTRID " + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+		RestTemplate restTemplate = new RestTemplate();
+		int uid = generateUniqueId();
+		// Data attached to the request.
+		HttpEntity<?> requestBody = new HttpEntity<Object>(headers);
 		ResponseEntity<String> result = null;
-		//recovery the agent instance
-		//agentInstance = getAgentInstance();
-		//recovery the execution environment
-		String exec_id = createExecutionEnvironment();
-		TimeUnit.SECONDS.sleep(50);
-		creatDynMon(exec_id,type,inter);
+		
+		try {
+			// Send request with POST method.
+			String urlA="http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/ebpf-program/"+id;
+			result = restTemplate.exchange(urlA, HttpMethod.DELETE, requestBody, String.class);
+			if (result.getStatusCode() == HttpStatus.OK) {
+				logger.info("++++++++++ Execution Enviroment created with id = "+"sc-ebpf-"+uid);
+				return true;
+			}else {
+				logger.error("++++++++++ Execution Enviroment  with an error: " + result.getBody());
+				return false;
+			}
+		}catch(Exception e) {
+			logger.error("++++++++++ error while contatcting Context Broker module: " + e.getMessage());
+			throw new IOException();
+		}
+	}
+
+
+	public void ebpfAlarm(String type, String inter) throws ContextBrokerException, IOException, JSONException, InterruptedException{
+		logger.info("+++++++++ EBPF deploying"+type+" interface"+inter);
+		int i = 0;
+		 for(i=0;i<9;i++) {
+			 setDID.add( creatDynMon("node-"+i,type,inter));
+         }
 	
 	}
 	
@@ -137,7 +168,7 @@ public class InstanceEbpf {
 		return "sc-ebpf-"+uid;
 	}
 	
-	private  void creatDynMon(String ebpf_id, String type, String interface_d) throws IOException, JSONException {
+	private  String creatDynMon(String ebpf_id, String type, String interface_d) throws IOException, JSONException {
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -171,7 +202,7 @@ public class InstanceEbpf {
 			System.out.println("++++++++++ error while contatcting Context Broker module: " + e.toString());
 			throw new IOException();
 		}
-		
+		return "dyn-id-"+uid;
 	}
 
 
