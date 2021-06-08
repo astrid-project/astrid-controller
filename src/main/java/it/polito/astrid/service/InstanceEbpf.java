@@ -78,7 +78,7 @@ public class InstanceEbpf {
 		HttpEntity<String> requestBody = null;
 		ResponseEntity<String> result = null;
 		//recovery the agent instance
-		agentInstance = getAgentInstance();
+		//agentInstance = getAgentInstance();
 		//recovery the execution environment
 		String exec_id = createExecutionEnvironment();
 		TimeUnit.SECONDS.sleep(50);
