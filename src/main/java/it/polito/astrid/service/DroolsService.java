@@ -1,6 +1,7 @@
 package it.polito.astrid.service;
 
 
+import it.polito.astrid.models.DynMonIDs;
 import it.polito.astrid.models.InterceptionRequest;
 
 import org.kie.api.KieServices;
@@ -26,11 +27,13 @@ public class DroolsService {
     
     private final KieContainer kieContainer;
     private final KafkaCounter numberKafka;
+    private final DynMonIDs ids;
     
     @Autowired
 	public DroolsService() {
 		this.kieContainer = kieContainer();
 		numberKafka = new KafkaCounter();
+		ids = new DynMonIDs();
 	}
     
     /*@Bean
@@ -82,6 +85,8 @@ public class DroolsService {
         	kieSession.insert(IR.getMess());
         	kieSession.insert(COM);
         	kieSession.insert(numberKafka);
+        	kieSession.insert(ids);
+        	
         }else{
         	kieSession.insert(IR);
     		kieSession.insert(COM);

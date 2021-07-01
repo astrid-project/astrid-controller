@@ -42,6 +42,7 @@ import it.polito.verefoo.astrid.jaxb.Components.*;
 import it.polito.verefoo.jaxb.NFV;
 import net.minidev.json.JSONObject;
 import springfox.documentation.annotations.ApiIgnore;
+import it.polito.astrid.models.Configuration;
 import it.polito.astrid.models.InterceptionRequest;
 import it.polito.astrid.models.KafkaMessage;
 import it.polito.astrid.models.NetworkStatus;
@@ -103,6 +104,19 @@ public class RegistrationController {
 		InterceptionRequest IR = new InterceptionRequest(null, null, null, "/register/policy", null, policy);
 		droolsService.sendInterceptionRequest(IR, getVerefooInfo(), getContextBroker(), null);
 		return IR.getNfv();
+	}
+	
+
+	@ApiOperation(value = "registerDeployement", notes = "Recieves deployement . ")
+	@RequestMapping(method = RequestMethod.POST, value = "/register/deployement", produces = "text/plain", consumes = "text/plain")
+	@ApiResponses(value = { @ApiResponse(code = 201, message = "Created"),
+			@ApiResponse(code = 400, message = "Bad Request"), })
+	@ResponseBody
+	public ResponseEntity<Configuration> registerPolicy(@RequestBody Configuration config) throws AstridComponentNotFoundException, IOException, ResourceNotFoundException {
+		InterceptionRequest IR = new InterceptionRequest(null, null, null, "/register/deployment", null, null);
+		IR.setDeployement(config);
+		droolsService.sendInterceptionRequest(IR, getContextBroker(), null,  null);
+		return new ResponseEntity<Configuration>(config,HttpStatus.OK);
 	}
 	
 	@ApiOperation(value = "registerEvent", notes = "Recieves an Event and sends it to Verikube. ")

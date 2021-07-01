@@ -53,10 +53,10 @@ import it.polito.verefoo.jaxb.Node;
 
 public class InstanceEbpf {
 	
-	private static final Logger logger=LoggerFactory.getLogger(InfrastructureInfoRequest.class);
+	private static final Logger logger=LoggerFactory.getLogger(InstanceEbpf.class);
 	
 	private Component ContextBroker;
-	 private Set<String> setDID = new HashSet();
+
 	
 	public InstanceEbpf(Component ContextBroker){
 		this.ContextBroker = ContextBroker;
@@ -65,15 +65,12 @@ public class InstanceEbpf {
 	
 	
 	public void ebpfAlarmRm() throws ContextBrokerException, IOException, JSONException, InterruptedException{
+		String newId = null;
 		logger.info("+++++++++ EBPF removing");
 		int i = 0;
 		 for(i=0;i<9;i++) {
-			 for(String newId : setDID) {
 				 logger.info("----- Removing id="+newId);
-				 if(remDynMon(newId)) {
-					 setDID.remove(newId);
-				 }
-			 }
+				 remDynMon(newId);
 				
 			 
          }
@@ -108,12 +105,9 @@ public class InstanceEbpf {
 	}
 
 
-	public void ebpfAlarm(String type, String inter) throws ContextBrokerException, IOException, JSONException, InterruptedException{
+	public String ebpfAlarm(String type, String inter) throws ContextBrokerException, IOException, JSONException, InterruptedException{
 		logger.info("+++++++++ EBPF deploying"+type+" interface"+inter);
-		int i = 0;
-		 for(i=0;i<9;i++) {
-			 setDID.add( creatDynMon("node-"+i,type,inter));
-         }
+		return creatDynMon("node-",type,inter);
 	
 	}
 	
@@ -126,47 +120,6 @@ public class InstanceEbpf {
 	        return Integer.parseInt(str);
 	    }
 	
-	private String createExecutionEnvironment() throws IOException {
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.set("Authorization", "ASTRID " + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
-		
-		RestTemplate restTemplate = new RestTemplate();
-		
-		
-		int uid = generateUniqueId();
-		Execution_Environment exec = new Execution_Environment();
-		Execution_Environment.LCP  lcp = exec.new LCP();
-		lcp.setPort(5000);
-		lcp.setHttps(false);
-		exec.setLcp(lcp);
-		exec.setDescription("polycube for ebpf "+uid);
-		exec.setId("sc-ebpf-"+uid);
-		exec.setType_id("container-docker");
-		exec.setHostname( "node-0.astrid-kube");
-		exec.setEnabled( "Yes");
-		
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.setSerializationInclusion(Include.NON_NULL);
-		
-		// Data attached to the request.
-		HttpEntity<String> requestBody = new HttpEntity<String>(mapper.writeValueAsString(exec), headers);
-		
-		ResponseEntity<String> result = null;
-		try {
-			// Send request with POST method.
-			result = restTemplate.postForEntity("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/exec-env", requestBody, String.class);
-			if (result.getStatusCode() == HttpStatus.OK) {
-				logger.info("++++++++++ Execution Enviroment created with id = "+"sc-ebpf-"+uid);
-			}else {
-				logger.error("++++++++++ Execution Enviroment  with an error: " + result.getBody());
-			}
-		}catch(Exception e) {
-			logger.error("++++++++++ error while contatcting Context Broker module: " + e.getMessage());
-			throw new IOException();
-		}
-		return "sc-ebpf-"+uid;
-	}
 	
 	private  String creatDynMon(String ebpf_id, String type, String interface_d) throws IOException, JSONException {
 
@@ -185,7 +138,7 @@ public class InstanceEbpf {
 		dynObject.put("interface", interface_d);
 		
 		// Data attached to the request.
-		HttpEntity<JSONObject> requestBody = new HttpEntity<JSONObject>( dynObject, headers);
+		HttpEntity<String> requestBody = new HttpEntity<String>( dynObject.toString(), headers);
 		
 		ResponseEntity<String> result = null;
 		try {

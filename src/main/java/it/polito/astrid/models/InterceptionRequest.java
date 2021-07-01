@@ -17,8 +17,17 @@ public class InterceptionRequest {
     ResponseEntity<NFV> nfv;
     ResponseEntity<String> result;
     KafkaMessage mess;
+    Configuration deployement;
 
-    public KafkaMessage getMess() {
+    public Configuration getDeployement() {
+		return deployement;
+	}
+
+	public void setDeployement(Configuration deployement) {
+		this.deployement = deployement;
+	}
+
+	public KafkaMessage getMess() {
 		return mess;
 	}
 

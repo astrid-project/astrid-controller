@@ -139,3 +139,13 @@ rule "DNS WARN"
 				IFS.ebpfAlarmRm();
 				IFS.ebpfAlarm("dns_warn","eno1");
 end
+
+
+rule "Register Deployement"
+        when
+                interceptObject: InterceptionRequest(command=="/register/deployement")
+                component1: Component(name=="ContextBroker")
+        then
+        		InstanceExecEnv IFS = new InstanceExecEnv(component1, interceptObject.getDeployement());
+
+end

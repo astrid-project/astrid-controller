@@ -62,10 +62,11 @@ The API integrated for now are the following:
 
 | Resources     | Relative URLs              | Meaning                                        |
 | ------------- | -------------------------- | ---------------------------------------------- |
-| controller    | controller                 | The framework (main resource)                  |
-| infrastucture | controller/insfrastructure | XML file describing infrastructure information |
-| policy        | controller/policy          | yaml file describing the (reachability) policy |
-| event         | controller /event          | XML file describing events occured in ASTRID   |
+| controller    | controller/register/       | The framework (main resource)                  |
+| infrastucture | controller/register/insfrastructure  | XML file describing infrastructure information |
+| policy        | controller/register/policy           | yaml file describing the (reachability) policy |
+| event         | controller/register/event            | XML file describing events occured in ASTRID   |
+| deployment    | controller/register/deployment       | JSON file describing the deployment            |
 
 You can find more details and try them using the Swagger, that you can reachable to this URL: http://localhost:8083/controller/swagger-ui.html (after you launched the Astrid Controller).
 
