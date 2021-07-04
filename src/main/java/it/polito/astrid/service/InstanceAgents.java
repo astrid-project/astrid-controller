@@ -1,7 +1,6 @@
 package it.polito.astrid.service;
 
 import java.io.IOException;
-import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,12 +21,12 @@ import it.polito.contextbroker.model.Execution_Environment;
 import it.polito.contextbroker.model.Execution_Environment.LCP;
 import it.polito.verefoo.astrid.jaxb.Components.Component;
 
-public class InstanceExecEnv {
+public class InstanceAgents {
 	private Component ContextBroker;
 	private Configuration configuration;
-	private static final Logger logger=LoggerFactory.getLogger(InstanceExecEnv.class);
+	private static final Logger logger=LoggerFactory.getLogger(InstanceAgents.class);
 	
-	public InstanceExecEnv(Component ContextBroker, Configuration configuration){
+	public InstanceAgents(Component ContextBroker, Configuration configuration){
 		this.ContextBroker = ContextBroker;
 		this.configuration=configuration;
 	
@@ -84,14 +83,9 @@ public class InstanceExecEnv {
 		}
 		return "sc-ebpf-"+uid;
 	}
-	 public static int generateUniqueId() {      
-	        UUID idOne = UUID.randomUUID();
-	        String str=""+idOne;        
-	        int uid=str.hashCode();
-	        String filterStr=""+uid;
-	        str=filterStr.replaceAll("-", "");
-	        return Integer.parseInt(str);
-	    }
-	
-	
+
+	private int generateUniqueId() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 }

@@ -14,7 +14,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -41,6 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.polito.astrid.controllers.ContextBrokerException;
 import it.polito.astrid.models.KafkaMessage;
 import it.polito.contextbroker.model.Agent_Instance;
+import it.polito.contextbroker.model.Ebpf;
 import it.polito.contextbroker.model.Execution_Environment;
 import it.polito.contextbroker.model.Execution_Environment.LCP;
 import it.polito.contextbroker.model.actions;
@@ -52,142 +52,195 @@ import it.polito.verefoo.jaxb.NFV;
 import it.polito.verefoo.jaxb.Node;
 
 public class InstanceEbpf {
-	
-	private static final Logger logger=LoggerFactory.getLogger(InstanceEbpf.class);
-	
+
+	private static final Logger logger = LoggerFactory.getLogger(InstanceEbpf.class);
+
 	private Component ContextBroker;
 
-	
-	public InstanceEbpf(Component ContextBroker){
+	public InstanceEbpf(Component ContextBroker) {
 		this.ContextBroker = ContextBroker;
-	
+
 	}
-	
-	
-	public void ebpfAlarmRm() throws ContextBrokerException, IOException, JSONException, InterruptedException{
-		String newId = null;
-		logger.info("+++++++++ EBPF removing");
-		int i = 0;
-		 for(i=0;i<9;i++) {
-				 logger.info("----- Removing id="+newId);
-				 remDynMon(newId);
-				
-			 
-         }
-	
+
+	public void ebpfAlarmRm(String command)
+			throws ContextBrokerException, IOException, JSONException, InterruptedException {
+		List<Ebpf> ebpfs = getEbpfCodes();
+		System.out.println("TTTTTTTTTTTTTTTTT Found ebpfs before remove	 "+ebpfs.size());
+		for (Ebpf ebpf : ebpfs) {
+			if (ebpf.getEbpf_program_catalog_id().equals(command)) {
+				System.out.println("$$$$$$$ Found Ebpf to remove " + ebpf.getId());
+				remDynMon(ebpf.getId());
+
+			}
+		}
 	}
-	
-	private boolean remDynMon(String id) throws IOException {
+
+	private List<Ebpf> getEbpfCodes() {
+		List<Ebpf> exec_env = new ArrayList<>();
+		ObjectMapper objectMapper = new ObjectMapper();
+		RestTemplate restTemplate = new RestTemplate();
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.set("Authorization", "ASTRID " + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+		headers.set("Authorization", "ASTRID "
+				+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+		HttpEntity<?> requestBody = new HttpEntity<Object>(headers);
+
+		Jaxb2RootElementHttpMessageConverter converter = new Jaxb2RootElementHttpMessageConverter();
+		converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
+		restTemplate.setMessageConverters(Arrays.asList(converter, new StringHttpMessageConverter()));
+		try {
+			ResponseEntity<String> response = restTemplate.exchange(
+					"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/ebpf-program",
+					HttpMethod.GET, requestBody, String.class, 1);
+			exec_env = Arrays.asList(objectMapper.readValue(response.getBody(), Ebpf[].class));
+		} catch (Exception e) {
+		}
+		return exec_env;
+	}
+
+	private boolean remDynMon(String id) throws IOException {
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.set("Authorization", "ASTRID "
+				+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
 		RestTemplate restTemplate = new RestTemplate();
 		int uid = generateUniqueId();
 		// Data attached to the request.
 		HttpEntity<?> requestBody = new HttpEntity<Object>(headers);
 		ResponseEntity<String> result = null;
-		
+
 		try {
 			// Send request with POST method.
-			String urlA="http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/ebpf-program/"+id;
+			String urlA = "http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort()
+					+ "/instance/ebpf-program/" + id;
 			result = restTemplate.exchange(urlA, HttpMethod.DELETE, requestBody, String.class);
 			if (result.getStatusCode() == HttpStatus.OK) {
-				logger.info("++++++++++ Execution Enviroment created with id = "+"sc-ebpf-"+uid);
+				logger.info("++++++++++ Execution Enviroment created with id = " + "sc-ebpf-" + uid);
 				return true;
-			}else {
+			} else {
 				logger.error("++++++++++ Execution Enviroment  with an error: " + result.getBody());
 				return false;
 			}
-		}catch(Exception e) {
+		} catch (Exception e) {
 			logger.error("++++++++++ error while contatcting Context Broker module: " + e.getMessage());
 			throw new IOException();
 		}
 	}
 
+	public String ebpfAlarm(String type, String inter)
+			throws ContextBrokerException, IOException, JSONException, InterruptedException {
+		logger.info("+++++++++ EBPF deploying " + type + " interface " + inter);
+		List<Execution_Environment> exec_env = new ArrayList<>();
+		exec_env = getExecutionEnvironment();
+		System.out.println("+++++++++ Exec-envs  = "+exec_env.size());
+		Iterator<Execution_Environment> it = exec_env.iterator();
+		boolean trovato = false;
+		// recovery the id of exec_env that has the IP egual to source IP of the kafka
+		// message
+		while (it.hasNext() && trovato == false) {
+			Execution_Environment node = it.next();
+			System.out.println("############# Looking for exec "+node.getId());
+			if(node.getId().startsWith("sc-ebpf")) {
+				logger.info("+++++++++ Found exec-env "+node.getId());
+				creatDynMon(node.getId(), type, inter);
+			}
+				
+			
+		}
 
-	public String ebpfAlarm(String type, String inter) throws ContextBrokerException, IOException, JSONException, InterruptedException{
-		logger.info("+++++++++ EBPF deploying"+type+" interface"+inter);
-		return creatDynMon("node-",type,inter);
-	
+		return "";
+
 	}
-	
-	 public static int generateUniqueId() {      
-	        UUID idOne = UUID.randomUUID();
-	        String str=""+idOne;        
-	        int uid=str.hashCode();
-	        String filterStr=""+uid;
-	        str=filterStr.replaceAll("-", "");
-	        return Integer.parseInt(str);
-	    }
-	
-	
-	private  String creatDynMon(String ebpf_id, String type, String interface_d) throws IOException, JSONException {
+
+	public static int generateUniqueId() {
+		UUID idOne = UUID.randomUUID();
+		String str = "" + idOne;
+		int uid = str.hashCode();
+		String filterStr = "" + uid;
+		str = filterStr.replaceAll("-", "");
+		return Integer.parseInt(str);
+	}
+
+	private String creatDynMon(String ebpf_id, String type, String interface_d) throws IOException, JSONException {
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.set("Authorization", "ASTRID " + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+		headers.set("Authorization", "ASTRID "
+				+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
 		RestTemplate restTemplate = new RestTemplate();
-		
-		
+
 		int uid = generateUniqueId();
 		JSONObject dynObject = new JSONObject();
 		dynObject.put("ebpf_program_catalog_id", type);
-		dynObject.put("id", "dyn-id-"+uid);
+		dynObject.put("id", "dyn-id-" + uid);
 		dynObject.put("description", "Collect");
 		dynObject.put("exec_env_id", ebpf_id);
 		dynObject.put("interface", interface_d);
-		
+
 		// Data attached to the request.
-		HttpEntity<String> requestBody = new HttpEntity<String>( dynObject.toString(), headers);
-		
+		HttpEntity<String> requestBody = new HttpEntity<String>(dynObject.toString(), headers);
+
 		ResponseEntity<String> result = null;
 		try {
 			// Send request with POST method.
-			result = restTemplate.postForEntity("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/ebpf-program", requestBody, String.class);
+			result = restTemplate.postForEntity(
+					"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/ebpf-program",
+					requestBody, String.class);
 			if (result.getStatusCode() == HttpStatus.OK) {
-				System.out.println("++++++++++ DynMon created with id = "+"dyn-id-"+uid);
-				System.out.println("++++++++++ "+result.getBody() );
-			}else {
+				System.out.println("++++++++++ DynMon created with id = " + "dyn-id-" + uid);
+				System.out.println("++++++++++ " + result.getBody());
+			} else {
 				System.out.println("++++++++++ DynMon  with an error: " + result.getBody());
 			}
-		}catch(Exception e) {
+		} catch (Exception e) {
 			System.out.println("++++++++++ error while contatcting Context Broker module: " + e.getMessage());
 			System.out.println("++++++++++ error while contatcting Context Broker module: " + e.toString());
 			throw new IOException();
 		}
-		return "dyn-id-"+uid;
+		return "dyn-id-" + uid;
 	}
 
-
-	private String getAddressWithMask(String ip){
+	private String getAddressWithMask(String ip) {
 		String[] parti = ip.split(Pattern.quote("."));
-		if(parti[3].compareTo("-1")==0) {
+		if (parti[3].compareTo("-1") == 0) {
 			return (parti[0] + "." + parti[1] + "." + parti[2] + ".0/24");
-		}else if (parti[2].compareTo("-1")==0) {
+		} else if (parti[2].compareTo("-1") == 0) {
 			return (parti[0] + "." + parti[1] + ".0.0/16");
-		}else if(parti[1].compareTo("-1")==0) {
+		} else if (parti[1].compareTo("-1") == 0) {
 			return (parti[0] + ".0.0.0/8");
 		}
 		return ip;
 	}
-	
+
 	private List<Execution_Environment> getExecutionEnvironment() throws ContextBrokerException {
 		List<Execution_Environment> exec_env = new ArrayList<>();
 		ObjectMapper objectMapper = new ObjectMapper();
 		RestTemplate restTemplate = new RestTemplate();
+		
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.set("Authorization", "ASTRID "
+				+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+		HttpEntity<?> requestBody = new HttpEntity<Object>(headers);
+		
 		Jaxb2RootElementHttpMessageConverter converter = new Jaxb2RootElementHttpMessageConverter();
 		converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
 		restTemplate.setMessageConverters(Arrays.asList(converter, new StringHttpMessageConverter()));
 		try {
-			ResponseEntity<String> ee = restTemplate.getForEntity("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/exec-env", String.class);
-			exec_env = Arrays.asList(objectMapper.readValue(ee.getBody(), Execution_Environment[].class));
-		}catch (Exception e) {
-			logger.error("+++++++++ error while asking the execution environments to Context Broker: " + e.getMessage());
+			ResponseEntity<String> response = restTemplate.exchange(
+					"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/exec-env",
+					HttpMethod.GET, requestBody, String.class, 1);
+			exec_env = Arrays.asList(objectMapper.readValue(response.getBody(), Execution_Environment[].class));
+		} catch (Exception e) {
+			logger.error(
+					"+++++++++ error while asking the execution environments to Context Broker: " + e.getMessage());
 			throw new ContextBrokerException(e.getMessage());
 		}
 		return exec_env;
 	}
-	
+
 	private List<Agent_Instance> getAgentInstance() throws ContextBrokerException {
 		List<Agent_Instance> agentInstance = new ArrayList<>();
 		ObjectMapper objectMapper = new ObjectMapper();
@@ -197,13 +250,16 @@ public class InstanceEbpf {
 		restTemplate.setMessageConverters(Arrays.asList(converter, new StringHttpMessageConverter()));
 		ResponseEntity<String> result = null;
 		try {
-			result = restTemplate.getForEntity("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent", String.class);
-			agentInstance = objectMapper.readValue(result.getBody(), new TypeReference<List<Agent_Instance>>(){});
-		}catch(HttpServerErrorException ex) {
+			result = restTemplate.getForEntity(
+					"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent",
+					String.class);
+			agentInstance = objectMapper.readValue(result.getBody(), new TypeReference<List<Agent_Instance>>() {
+			});
+		} catch (HttpServerErrorException ex) {
 			logger.error("+++++++++ error while recover the Agent instance from Context Broker: " + ex.getMessage());
 			throw new ContextBrokerException(ex.getStatusCode().toString());
 		} catch (HttpClientErrorException e) {
-			if(e.getStatusCode() != HttpStatus.NOT_FOUND) {
+			if (e.getStatusCode() != HttpStatus.NOT_FOUND) {
 				logger.error("+++++++++ error while recover the Agent instance from Context Broker: " + e.getMessage());
 				throw new ContextBrokerException(e.getMessage());
 			}
@@ -219,23 +275,26 @@ public class InstanceEbpf {
 		}
 		return agentInstance;
 	}
-	
+
 	private boolean checkFirewallExist(String exec_env_id, List<Agent_Instance> ai) {
 		Iterator<Agent_Instance> it = ai.iterator();
-		while(it.hasNext()) {
+		while (it.hasNext()) {
 			Agent_Instance node = it.next();
-			if((node.getAgent_catalog_id().compareTo("firewall") == 0) && (node.getExec_env_id().compareTo(exec_env_id) == 0)) {
+			if ((node.getAgent_catalog_id().compareTo("firewall") == 0)
+					&& (node.getExec_env_id().compareTo(exec_env_id) == 0)) {
 				return true;
 			}
 		}
 		return false;
 	}
-	
-	private Agent_Instance getFirewallwithExecEnvId(String exec_env_id, List<Agent_Instance> ai) throws ContextBrokerException {
+
+	private Agent_Instance getFirewallwithExecEnvId(String exec_env_id, List<Agent_Instance> ai)
+			throws ContextBrokerException {
 		Iterator<Agent_Instance> it = ai.iterator();
-		while(it.hasNext()) {
+		while (it.hasNext()) {
 			Agent_Instance node = it.next();
-			if((node.getAgent_catalog_id().compareTo("firewall") == 0) && (node.getExec_env_id().compareTo(exec_env_id) == 0)) {
+			if ((node.getAgent_catalog_id().compareTo("firewall") == 0)
+					&& (node.getExec_env_id().compareTo(exec_env_id) == 0)) {
 				return node;
 			}
 		}

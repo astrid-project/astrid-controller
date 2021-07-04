@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <components xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 	<component name='Verefoo' IPAddress='localhost' Port='8085'/>
-	<component name='ContextBroker' IPAddress='10.0.0.4' Port='5000'/>
+	<component name='ContextBroker' IPAddress='172.21.100.31' Port='5000'/>
 	<component name='Astrid_DB' IPAddress='localhost' Port='7687' Username='neo4j' Password='astrid'/>
 </components>

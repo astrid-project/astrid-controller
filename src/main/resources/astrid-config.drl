@@ -103,7 +103,7 @@ rule "NTP Alarm"
         then
         		InstanceEbpf IFS = new InstanceEbpf(component1);
 				System.out.println("^^^^^^ NTP ALARM");
-				IFS.ebpfAlarmRm();
+				IFS.ebpfAlarmRm("ntp_bau_and_warn");
 				IFS.ebpfAlarm("ntp_bau_and_warn","eno1");
 end
 
@@ -114,7 +114,7 @@ rule "NTP BAU"
         then
         		InstanceEbpf IFS = new InstanceEbpf(component1);
 				System.out.println("^^^^^^ NTP BAU");
-				IFS.ebpfAlarmRm();
+				IFS.ebpfAlarmRm("ntp_bau");
 				IFS.ebpfAlarm("ntp_bau","eno1");
 end
 
@@ -125,7 +125,7 @@ rule "DNS BAU"
         then
         		InstanceEbpf IFS = new InstanceEbpf(component1);
 				System.out.println("^^^^^^ DNS BAU");
-				IFS.ebpfAlarmRm();
+				IFS.ebpfAlarmRm("dns_bau");
 				IFS.ebpfAlarm("dns_bau","eno1");
 end
 
@@ -136,7 +136,7 @@ rule "DNS WARN"
         then
         		InstanceEbpf IFS = new InstanceEbpf(component1);
 				System.out.println("^^^^^^ DNS WARN");
-				IFS.ebpfAlarmRm();
+				IFS.ebpfAlarmRm("dns_warn");
 				IFS.ebpfAlarm("dns_warn","eno1");
 end
 
@@ -146,6 +146,6 @@ rule "Register Deployement"
                 interceptObject: InterceptionRequest(command=="/register/deployement")
                 component1: Component(name=="ContextBroker")
         then
-        		InstanceExecEnv IFS = new InstanceExecEnv(component1, interceptObject.getDeployement());
+        		InstanceAgents IFS = new InstanceAgents(component1, interceptObject.getDeployement());
 
 end
