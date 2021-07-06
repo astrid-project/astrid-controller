@@ -1,13 +1,5 @@
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: astrid
-data:
-  # Configuration values can be set as key-value properties
-  # kubectl create configmap astrid --from-file astrid.yaml -o yaml --dry-run | kubectl replace -f -
-  database: mongodb
-  database_uri: mongodb://localhost:27017
-  astrid.cb.ip: 172.21.100.31
-  astrid.cb.port: 5000
-  astrid.kafka.ipport: 10.0.0.4:9092
+astrid.cb.ip=172.21.100.31
+astrid.cb.port=5000
+astrid.kafka.ipport=10.0.0.4:9092
+# kubectl create configmap astrid --from-env-file=configMap.yaml -o yaml --dry-run | kubectl replace -f -
 

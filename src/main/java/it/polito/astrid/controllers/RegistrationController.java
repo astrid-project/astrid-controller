@@ -73,7 +73,8 @@ public class RegistrationController {
 				System.setProperty("spring.kafka.screescrbootstrap-servers", System.getenv("KAFKA_BOOTSTRAP_SERVER"));
 				logger.info("-------> Kafka IPs " + System.getenv("KAFKA_BOOTSTRAP_SERVER"));
 	    }else {
-	    	System.setProperty("spring.kafka.bootstrap-servers", "192.168.8.124:9092");
+                logger.info("-------> Kafka IP was not set " + System.getenv("KAFKA_BOOTSTRAP_SERVER"));
+	    	System.setProperty("spring.kafka.bootstrap-servers", "10.0.0.4:9092");
 	    }
 		droolsService = new DroolsService();
 		registerService = new RegisterService();
@@ -100,7 +101,7 @@ public class RegistrationController {
 		
 		if(System.getenv("CB_IP")!=null && System.getenv("CB_PORT") !=null) {
 			getContextBroker().setIPAddress(System.getenv("CB_IP"));
-			getContextBroker().setPort(BigInteger.valueOf(Integer.getInteger(System.getenv("CB_PORT"))));
+			getContextBroker().setPort(new BigInteger(System.getenv("CB_PORT")));
 			logger.info("-------> ContextBroker IPs " + System.getenv("CB_IP")+" "+System.getenv("CB_PORT"));
 		}
 	}

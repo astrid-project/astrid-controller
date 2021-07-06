@@ -1,13 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
+  name: astrid-controller
   labels:
-    app: astrid-controller
-  name: controller-service
+    run: astrid-controller
 spec:
   ports:
-  - name: "80"
-    port: 80
-    targetPort: 8080
+  - port: 8083
+    protocol: TCP
+    targetPort: 8083
+  externalIPs:
+    - 172.21.100.31
   selector:
-    app : positive/controller
+    app: astrid-controller

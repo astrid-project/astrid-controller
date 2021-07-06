@@ -34,7 +34,7 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: astrid
-                  key: astrid.kafka.ipport
+                  key: astrid.kafka.ipport                  
         ports:
         - containerPort: 8083
       nodeSelector:
@@ -42,6 +42,3 @@ spec:
       dnsConfig:
         searches:
         - astrid-kube.svc.cluster.local
-      envFrom:
-        - configMapRef:
-            name: astrid

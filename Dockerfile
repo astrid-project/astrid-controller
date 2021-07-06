@@ -13,6 +13,6 @@ WORKDIR /home/app
 # Package stage
 #
    
-RUN mvn clean packagew
+RUN mvn clean package
 EXPOSE 8083
 ENTRYPOINT ["java","-jar","/home/app/target/controller-0.0.1-SNAPSHOT.jar"]
