@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.lang.String;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -68,6 +69,12 @@ public class RegistrationController {
 	private Components AstridComponents;
 
 	public RegistrationController() throws AstridComponentNotFoundException {
+		if(System.getenv("KAFKA_BOOTSTRAP_SERVER")!=null) {
+				System.setProperty("spring.kafka.screescrbootstrap-servers", System.getenv("KAFKA_BOOTSTRAP_SERVER"));
+				logger.info("-------> Kafka IPs " + System.getenv("KAFKA_BOOTSTRAP_SERVER"));
+	    }else {
+	    	System.setProperty("spring.kafka.bootstrap-servers", "192.168.8.124:9092");
+	    }
 		droolsService = new DroolsService();
 		registerService = new RegisterService();
 		// kafkaService = new KafkaConsumerConfig(droolsService);
@@ -88,6 +95,13 @@ public class RegistrationController {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		}
+		
+		
+		if(System.getenv("CB_IP")!=null && System.getenv("CB_PORT") !=null) {
+			getContextBroker().setIPAddress(System.getenv("CB_IP"));
+			getContextBroker().setPort(BigInteger.valueOf(Integer.getInteger(System.getenv("CB_PORT"))));
+			logger.info("-------> ContextBroker IPs " + System.getenv("CB_IP")+" "+System.getenv("CB_PORT"));
 		}
 	}
 

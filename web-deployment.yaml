@@ -19,10 +19,29 @@ spec:
       - image: astrid-controller_web
         imagePullPolicy: IfNotPresent
         name: astrid-controller
+        env:
+            - name: CB_IP
+              valueFrom:
+                configMapKeyRef:
+                  name: astrid
+                  key: astrid.cb.ip
+            - name: CB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: astrid
+                  key: astrid.cb.port
+            - name: KAFKA_BOOTSTRAP_SERVER
+              valueFrom:
+                configMapKeyRef:
+                  name: astrid
+                  key: astrid.kafka.ipport
         ports:
-        - containerPort: 8080
+        - containerPort: 8083
       nodeSelector:
         name: compute01
       dnsConfig:
         searches:
         - astrid-kube.svc.cluster.local
+      envFrom:
+        - configMapRef:
+            name: astrid
