@@ -74,7 +74,7 @@ public class RegistrationController {
 				logger.info("-------> Kafka IPs " + System.getenv("KAFKA_BOOTSTRAP_SERVER"));
 	    }else {
                 logger.info("-------> Kafka IP was not set " + System.getenv("KAFKA_BOOTSTRAP_SERVER"));
-	    	System.setProperty("spring.kafka.bootstrap-servers", "10.0.0.4:9092");
+	    	System.setProperty("spring.kafka.bootstrap-servers", "10.10.11.94:9092");
 	    }
 		droolsService = new DroolsService();
 		registerService = new RegisterService();

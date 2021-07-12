@@ -173,7 +173,7 @@ public class InstanceEbpf {
 
 		int uid = generateUniqueId();
 		JSONObject dynObject = new JSONObject();
-		dynObject.put("ebpf_program_catalog_id", type);
+		dynObject.put("ebpf_program_catalog_id", type+"_id");
 		dynObject.put("id", "dyn-id-" + uid);
 		dynObject.put("description", "Collect");
 		dynObject.put("exec_env_id", ebpf_id);
