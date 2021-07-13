@@ -161,8 +161,24 @@ public class RegistrationController {
 				registerService.uploadToCatalog(fileString);
 			}
 		}
+		
+		uploadInitialBau("DNS");
+		uploadInitialBau("NTP");
 
 		return new ResponseEntity<Exec>(exec, HttpStatus.OK);
+	}
+
+	private void uploadInitialBau(String bau) throws AstridComponentNotFoundException {
+		KafkaMessage mess = new KafkaMessage();
+		NetworkStatus status = new NetworkStatus();
+		status.setmUseCase(bau);
+		status.networkStatus="BAU";
+		mess.setStatus(status);
+
+		InterceptionRequest IR = new InterceptionRequest(null, null, null, "kafka", null, null);
+		IR.setMess(mess);
+		droolsService.sendInterceptionRequest(IR, getContextBroker(), null, null);
+		
 	}
 
 	@ApiOperation(value = "registerEvent", notes = "Recieves an Event and sends it to Verikube. ")

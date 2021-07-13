@@ -6,9 +6,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -56,20 +58,25 @@ public class InstanceEbpf {
 	private static final Logger logger = LoggerFactory.getLogger(InstanceEbpf.class);
 
 	private Component ContextBroker;
-
+	Map <String, String> dynMap ;
 	public InstanceEbpf(Component ContextBroker) {
 		this.ContextBroker = ContextBroker;
-
+		dynMap = new HashMap<String, String>();
 	}
 
-	public void ebpfAlarmRm(String command)
+	public void ebpfAlarmRm(String command, String type, String message)
 			throws ContextBrokerException, IOException, JSONException, InterruptedException {
 		List<Ebpf> ebpfs = getEbpfCodes();
 		System.out.println("TTTTTTTTTTTTTTTTT Found ebpfs before remove	 "+ebpfs.size());
 		for (Ebpf ebpf : ebpfs) {
 			if (ebpf.getEbpf_program_catalog_id().equals(command)) {
-				System.out.println("$$$$$$$ Found Ebpf to remove " + ebpf.getId());
-				remDynMon(ebpf.getId());
+				if(!dynMap.get(ebpf.getId()).equals(message)) {
+					System.out.println("$$$$$$$ Found Ebpf to remove " + ebpf.getId()+" message "+dynMap.get(ebpf.getId()));
+					remDynMon(ebpf.getId());
+				}
+				
+				
+				//remDynMon(ebpf.getId());
 
 			}
 		}
@@ -129,7 +136,7 @@ public class InstanceEbpf {
 		}
 	}
 
-	public String ebpfAlarm(String type, String inter)
+	public String ebpfAlarm(String type, String inter, String message)
 			throws ContextBrokerException, IOException, JSONException, InterruptedException {
 		logger.info("+++++++++ EBPF deploying " + type + " interface " + inter);
 		List<Execution_Environment> exec_env = new ArrayList<>();
@@ -144,7 +151,7 @@ public class InstanceEbpf {
 			System.out.println("############# Looking for exec "+node.getId());
 			if(node.getId().startsWith("sc-ebpf")) {
 				logger.info("+++++++++ Found exec-env "+node.getId());
-				creatDynMon(node.getId(), type, inter);
+				creatDynMon(node.getId(), type, inter,message);
 			}
 				
 			
@@ -163,7 +170,7 @@ public class InstanceEbpf {
 		return Integer.parseInt(str);
 	}
 
-	private String creatDynMon(String ebpf_id, String type, String interface_d) throws IOException, JSONException {
+	private String creatDynMon(String ebpf_id, String type, String interface_d, String message) throws IOException, JSONException {
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -173,7 +180,7 @@ public class InstanceEbpf {
 
 		int uid = generateUniqueId();
 		JSONObject dynObject = new JSONObject();
-		dynObject.put("ebpf_program_catalog_id", type+"_id");
+		dynObject.put("ebpf_program_catalog_id", type);
 		dynObject.put("id", "dyn-id-" + uid);
 		dynObject.put("description", "Collect");
 		dynObject.put("exec_env_id", ebpf_id);
@@ -191,6 +198,7 @@ public class InstanceEbpf {
 			if (result.getStatusCode() == HttpStatus.OK) {
 				System.out.println("++++++++++ DynMon created with id = " + "dyn-id-" + uid);
 				System.out.println("++++++++++ " + result.getBody());
+				dynMap.put("dyn-id-"+uid,message);
 			} else {
 				System.out.println("++++++++++ DynMon  with an error: " + result.getBody());
 			}

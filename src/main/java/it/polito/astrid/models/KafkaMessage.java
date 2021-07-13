@@ -8,7 +8,7 @@ public class KafkaMessage {
 	private String protocol;
 	private String timestamp;
 	private String attack;
-	private NetworkStatus status;
+	public NetworkStatus status;
 	
 
 	public NetworkStatus getStatus() {

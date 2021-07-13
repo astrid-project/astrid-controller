@@ -98,13 +98,13 @@ end
 
 rule "NTP Alarm"
         when
-        		k:KafkaMessage(status.mUseCase=="NTP"&&status.networkStatus=="ALARM")
+        		k:KafkaMessage(status.mUseCase=="NTP"&&(status.networkStatus=="ALARM"||status.networkStatus=="WARN"))
                 component1: Component(name=="ContextBroker")
         then
         		InstanceEbpf IFS = new InstanceEbpf(component1);
 				System.out.println("^^^^^^ NTP ALARM");
-				IFS.ebpfAlarmRm("ntp_bau_and_warn");
-				IFS.ebpfAlarm("ntp_bau_and_warn","eno1");
+				IFS.ebpfAlarmRm("ntp_bau_and_warn",k.status.mUseCase,k.status.networkStatus);
+				IFS.ebpfAlarm("ntp_bau_and_warn","ogstun",k.status.networkStatus);
 end
 
 rule "NTP BAU"
@@ -114,8 +114,8 @@ rule "NTP BAU"
         then
         		InstanceEbpf IFS = new InstanceEbpf(component1);
 				System.out.println("^^^^^^ NTP BAU");
-				IFS.ebpfAlarmRm("ntp_bau");
-				IFS.ebpfAlarm("ntp_bau","eno1");
+				IFS.ebpfAlarmRm("ntp_bau",k.status.mUseCase,k.status.networkStatus);
+				IFS.ebpfAlarm("ntp_bau","ogstun",k.status.networkStatus);
 end
 
 rule "DNS BAU"
@@ -125,19 +125,19 @@ rule "DNS BAU"
         then
         		InstanceEbpf IFS = new InstanceEbpf(component1);
 				System.out.println("^^^^^^ DNS BAU");
-				IFS.ebpfAlarmRm("dns_bau");
-				IFS.ebpfAlarm("dns_bau","eno1");
+				IFS.ebpfAlarmRm("dns_bau_ip",k.status.mUseCase,k.status.networkStatus);
+				IFS.ebpfAlarm("dns_bau_ip","ogstun",k.status.networkStatus);
 end
 
 rule "DNS WARN"
         when
-        		k:KafkaMessage(status.mUseCase=="DNS" && status.networkStatus=="ALARM")
+        		k:KafkaMessage(status.mUseCase=="DNS"&&(status.networkStatus=="ALARM"||status.networkStatus=="WARN"))
                 component1: Component(name=="ContextBroker")
         then
         		InstanceEbpf IFS = new InstanceEbpf(component1);
 				System.out.println("^^^^^^ DNS WARN");
-				IFS.ebpfAlarmRm("dns_warn");
-				IFS.ebpfAlarm("dns_warn","eno1");
+				IFS.ebpfAlarmRm("dns_warn_ip",k.status.mUseCase,k.status.networkStatus);
+				IFS.ebpfAlarm("dns_warn_ip","ogstun",k.status.networkStatus);
 end
 
 
