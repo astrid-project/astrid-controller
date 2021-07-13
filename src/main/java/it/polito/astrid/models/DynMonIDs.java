@@ -1,25 +1,27 @@
 package it.polito.astrid.models;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class DynMonIDs {
 	
-	public Set<String> setDID;
+	public Map <String, String> setDID;
 	 
 		
-		public void removeSetDID(String idNo) {
-					 setDID.remove(idNo);
+		public void removeSetDID(String id,String name) {
+					 setDID.remove(id, name);
 		}
 
 
-	public void addToSetDID(String idNo) {
-		setDID.add(idNo);
+	public void addToSetDID(String id,String name) {
+		setDID.put(id, name);
 	}
 
 
 		public DynMonIDs() {
-			 setDID = new HashSet();
+			setDID = new HashMap();
 		}
 		
 		

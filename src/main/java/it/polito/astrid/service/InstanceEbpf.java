@@ -40,6 +40,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.polito.astrid.controllers.ContextBrokerException;
+import it.polito.astrid.models.DynMonIDs;
 import it.polito.astrid.models.KafkaMessage;
 import it.polito.contextbroker.model.Agent_Instance;
 import it.polito.contextbroker.model.Ebpf;
@@ -58,10 +59,11 @@ public class InstanceEbpf {
 	private static final Logger logger = LoggerFactory.getLogger(InstanceEbpf.class);
 
 	private Component ContextBroker;
-	Map <String, String> dynMap ;
-	public InstanceEbpf(Component ContextBroker) {
+	Map<String, String> dynMap;
+	public InstanceEbpf(Component ContextBroker, DynMonIDs ids) {
+		this.dynMap = ids.setDID;
 		this.ContextBroker = ContextBroker;
-		dynMap = new HashMap<String, String>();
+	
 	}
 
 	public void ebpfAlarmRm(String command, String type, String message)
@@ -69,8 +71,12 @@ public class InstanceEbpf {
 		List<Ebpf> ebpfs = getEbpfCodes();
 		System.out.println("TTTTTTTTTTTTTTTTT Found ebpfs before remove	 "+ebpfs.size());
 		for (Ebpf ebpf : ebpfs) {
+			
 			if (ebpf.getEbpf_program_catalog_id().equals(command)) {
-				if(!dynMap.get(ebpf.getId()).equals(message)) {
+				String catalogId =dynMap.get(ebpf.getId());
+				logger.info("++++++++++ Searching in map for "+catalogId+" of ID "+ebpf.getId()+ " for message "+message);
+				if(catalogId!=null)
+				if(!catalogId.equals(message)) {
 					System.out.println("$$$$$$$ Found Ebpf to remove " + ebpf.getId()+" message "+dynMap.get(ebpf.getId()));
 					remDynMon(ebpf.getId());
 				}
@@ -198,7 +204,7 @@ public class InstanceEbpf {
 			if (result.getStatusCode() == HttpStatus.OK) {
 				System.out.println("++++++++++ DynMon created with id = " + "dyn-id-" + uid);
 				System.out.println("++++++++++ " + result.getBody());
-				dynMap.put("dyn-id-"+uid,message);
+			
 			} else {
 				System.out.println("++++++++++ DynMon  with an error: " + result.getBody());
 			}
@@ -207,6 +213,8 @@ public class InstanceEbpf {
 			System.out.println("++++++++++ error while contatcting Context Broker module: " + e.toString());
 			throw new IOException();
 		}
+		dynMap.put("dyn-id-"+uid,message);
+		System.out.println("--------- inserting to map key= " +"dyn-id-"+uid+ " value "+message	);
 		return "dyn-id-" + uid;
 	}
 

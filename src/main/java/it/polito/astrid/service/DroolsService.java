@@ -87,6 +87,7 @@ public class DroolsService {
         	kieSession.insert(numberKafka);
         	kieSession.insert(ids);
         	
+        	
         }else{
         	kieSession.insert(IR);
     		kieSession.insert(COM);
