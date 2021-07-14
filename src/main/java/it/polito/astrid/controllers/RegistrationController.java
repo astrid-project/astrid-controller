@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Iterator;
 import java.lang.String;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -34,6 +33,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.xml.sax.SAXException;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.swagger.annotations.ApiOperation;
@@ -61,12 +61,12 @@ import it.polito.astrid.service.RegisterService;
 @RequestMapping("/")
 public class RegistrationController {
 
-	private static final Logger logger = LoggerFactory.getLogger(RegistrationController.class);
+	public static final Logger logger = LoggerFactory.getLogger(RegistrationController.class);
 	// private final KafkaConsumerConfig kafkaService;
 	private final DroolsService droolsService;
 	private final RegisterService registerService;
 
-	private Components AstridComponents;
+	public Components AstridComponents;
 
 	public RegistrationController() throws AstridComponentNotFoundException {
 		if(System.getenv("KAFKA_BOOTSTRAP_SERVER")!=null) {
@@ -100,10 +100,42 @@ public class RegistrationController {
 		
 		
 		if(System.getenv("CB_IP")!=null && System.getenv("CB_PORT") !=null) {
-			getContextBroker().setIPAddress(System.getenv("CB_IP"));
-			getContextBroker().setPort(new BigInteger(System.getenv("CB_PORT")));
+			registerService.getContextBroker(this).setIPAddress(System.getenv("CB_IP"));
+			registerService.getContextBroker(this).setPort(new BigInteger(System.getenv("CB_PORT")));
 			logger.info("-------> ContextBroker IPs " + System.getenv("CB_IP")+" "+System.getenv("CB_PORT"));
 		}
+	}
+	
+	
+	@ApiOperation(value = "firewallRules", notes = "Recieves firewallRules  sends it to CB. Waits for result and sends it back", response = NFV.class)
+	@RequestMapping(method = RequestMethod.POST, value = "/register/firewallRules", produces = "application/json", consumes = "application/json")
+	@ApiResponses(value = { @ApiResponse(code = 201, message = "Created"),
+			@ApiResponse(code = 400, message = "Bad Request"), })
+	@ResponseBody
+	public ResponseEntity<String> firewallRules(
+			@ApiParam(value = "Infrastructure Info", required = true) @RequestBody JSONObject  firewall) throws AstridComponentNotFoundException {
+		registerService.setComponent(registerService.getContextBroker(this));
+		
+	    return registerService.passthroughFW(firewall);
+	}
+	
+	@ApiOperation(value = "firewallRules", notes = "Recieves firewallRules  sends it to CB. Waits for result and sends it back", response = NFV.class)
+	@RequestMapping(method = RequestMethod.GET, value = "/register/firewallRules", produces = "application/json")
+	@ApiResponses(value = { @ApiResponse(code = 201, message = "Created"),
+			@ApiResponse(code = 400, message = "Bad Request"), })
+	@ResponseBody
+	public ResponseEntity<String> getFirewallRules() throws AstridComponentNotFoundException {
+		registerService.setComponent(registerService.getContextBroker(this));
+		
+	    return registerService.passthroughFWget();
+	}
+	
+	
+	@RequestMapping(value = "/fix", method = RequestMethod.GET)
+	@ResponseBody
+	public void removeExecEnvs() throws ContextBrokerException, AstridComponentNotFoundException {
+		registerService.setComponent(registerService.getContextBroker(this));
+		registerService.removeExecEnvs();
 	}
 
 	@ApiOperation(value = "registerInfrastructure", notes = "Recieves Infrastructure info and sends it to Verikube. Waits for result and sends it back", response = NFV.class)
@@ -115,7 +147,7 @@ public class RegistrationController {
 			@ApiParam(value = "Infrastructure Info", required = true) @RequestBody InfrastructureInfo info)
 			throws ResourceNotFoundException, AstridComponentNotFoundException {
 		InterceptionRequest IR = new InterceptionRequest(null, null, null, "/register/insfrastructure", info, null);
-		droolsService.sendInterceptionRequest(IR, getVerefooInfo(), null, null);
+		droolsService.sendInterceptionRequest(IR, registerService.getVerefooInfo(this), null, null);
 		return IR.getNfv();
 	}
 
@@ -127,7 +159,7 @@ public class RegistrationController {
 	public ResponseEntity<NFV> registerPolicy(@RequestBody String policy)
 			throws AstridComponentNotFoundException, IOException, ResourceNotFoundException {
 		InterceptionRequest IR = new InterceptionRequest(null, null, null, "/register/policy", null, policy);
-		droolsService.sendInterceptionRequest(IR, getVerefooInfo(), getContextBroker(), null);
+		droolsService.sendInterceptionRequest(IR, registerService.getVerefooInfo(this), registerService.getContextBroker(this), null);
 		return IR.getNfv();
 	}
 
@@ -140,7 +172,7 @@ public class RegistrationController {
 			throws AstridComponentNotFoundException, IOException, ResourceNotFoundException {
 		InterceptionRequest IR = new InterceptionRequest(null, null, null, "/register/deployment", null, null);
 		IR.setDeployement(config);
-		droolsService.sendInterceptionRequest(IR, getContextBroker(), null, null);
+		droolsService.sendInterceptionRequest(IR, registerService.getContextBroker(this), null, null);
 		return new ResponseEntity<Configuration>(config, HttpStatus.OK);
 	}
 
@@ -150,19 +182,27 @@ public class RegistrationController {
 			@ApiResponse(code = 400, message = "Bad Request"), })
 	@ResponseBody
 	public ResponseEntity<Exec> registerExecEnv(@RequestBody Exec exec)
-			throws AstridComponentNotFoundException, IOException, ResourceNotFoundException {
-		registerService.setComponent(getContextBroker());
-		registerService.registerExec(exec);
-		File folder = new File("./src/main/resources/code");
-		System.out.println("#### "+folder.listFiles().length);
-		for (File iterable_element : folder.listFiles()) {
-			if (iterable_element.isFile()) {
-				String fileString = new String(Files.readAllBytes(Paths.get(iterable_element.getCanonicalPath())), StandardCharsets.UTF_8);
-				registerService.uploadToCatalog(fileString);
+			throws AstridComponentNotFoundException, ResourceNotFoundException {
+		registerService.setComponent(registerService.getContextBroker(this));
+		try {
+			registerService.registerExec(exec);
+			File folder = new File("./src/main/resources/code");
+			System.out.println("#### "+folder.listFiles().length);
+			for (File iterable_element : folder.listFiles()) {
+				if (iterable_element.isFile()) {
+					String fileString = new String(Files.readAllBytes(Paths.get(iterable_element.getCanonicalPath())), StandardCharsets.UTF_8);
+					registerService.uploadToCatalog(fileString);
+				}
 			}
+		} catch (java.io.IOException e) {
+			System.out.println("___> "+e);
 		}
 		
-		uploadInitialBau("DNS");
+		try {
+			uploadInitialBau("DNS");	
+		} catch (Exception e) {
+		}
+		
 		uploadInitialBau("NTP");
 
 		return new ResponseEntity<Exec>(exec, HttpStatus.OK);
@@ -177,8 +217,8 @@ public class RegistrationController {
 
 		InterceptionRequest IR = new InterceptionRequest(null, null, null, "kafka", null, null);
 		IR.setMess(mess);
-		droolsService.sendInterceptionRequest(IR, getContextBroker(), null, null);
-		
+		System.out.println("____ Uploading initial BAUs ");
+		droolsService.sendInterceptionRequest(IR, registerService.getContextBroker(this), null, null);
 	}
 
 	@ApiOperation(value = "registerEvent", notes = "Recieves an Event and sends it to Verikube. ")
@@ -192,40 +232,8 @@ public class RegistrationController {
 		// InfrastructureInfo info, String policy
 		InterceptionRequest IR = new InterceptionRequest(null, null, null, "/register/event", null, null);
 		IR.setEvent(event);
-		droolsService.sendInterceptionRequest(IR, getVerefooInfo(), getAstridDB(), getContextBroker());
+		droolsService.sendInterceptionRequest(IR, registerService.getVerefooInfo(this), registerService.getAstridDB(this), registerService.getContextBroker(this));
 		return IR.getNfv();
-	}
-
-	private Component getVerefooInfo() throws AstridComponentNotFoundException {
-		if (AstridComponents == null) {
-			logger.error("There aren't ASTRID components configure.");
-			throw new AstridComponentNotFoundException("Unable to contact external module");
-		}
-		Iterator<Component> iter = AstridComponents.getComponent().iterator();
-		Component c;
-		while (iter.hasNext()) {
-			c = iter.next();
-			if (c.getName().equals("Verefoo"))
-				return c;
-		}
-		logger.error("There isn't any Verefoo component configured.");
-		throw new AstridComponentNotFoundException("Unable to contact external module");
-	}
-
-	private Component getContextBroker() throws AstridComponentNotFoundException {
-		if (AstridComponents == null) {
-			logger.error("There aren't ASTRID components configure.");
-			throw new AstridComponentNotFoundException("Unable to contact external module");
-		}
-		Iterator<Component> iter = AstridComponents.getComponent().iterator();
-		Component c;
-		while (iter.hasNext()) {
-			c = iter.next();
-			if (c.getName().equals("ContextBroker"))
-				return c;
-		}
-		logger.error("There isn't any Context Broker component configured.");
-		throw new AstridComponentNotFoundException("Unable to contact external module");
 	}
 
 	private boolean validateXML(String pathOfXML, String pathOfXSD) {
@@ -243,28 +251,6 @@ public class RegistrationController {
 			logger.info("Unable to validate Astrid-components.XML: " + e.getMessage());
 		}
 		return true;
-	}
-
-	private Component getAstridDB() {
-		if (AstridComponents == null) {
-			logger.info("There aren't ASTRID components configure.");
-			Component C = new Component();
-			C.setName("Astrid_DB");
-			C.setIPAddress("0.0.0.0");
-			return C;
-		}
-		Iterator<Component> iter = AstridComponents.getComponent().iterator();
-		Component c;
-		while (iter.hasNext()) {
-			c = iter.next();
-			if (c.getName().equals("Astrid_DB"))
-				return c;
-		}
-		logger.info("There isn't any Astrid Database configured.");
-		Component C = new Component();
-		C.setName("Astrid_DB");
-		C.setIPAddress("0.0.0.0");
-		return C;
 	}
 
 	@RequestMapping(method = RequestMethod.OPTIONS, value = "*/*")
@@ -295,7 +281,7 @@ public class RegistrationController {
 		KafkaMessage mess = objectMapper.readValue(cr.value().toString().toLowerCase(), KafkaMessage.class);
 		InterceptionRequest IR = new InterceptionRequest(null, null, null, "kafka", null, null);
 		IR.setMess(mess);
-		droolsService.sendInterceptionRequest(IR, getContextBroker(), null, null);
+		droolsService.sendInterceptionRequest(IR, registerService.getContextBroker(this), null, null);
 		logger.info("++++++++++ Receive testing-result Kafka Messages: " + cr.value().toString());
 	}
 
@@ -326,7 +312,7 @@ public class RegistrationController {
 
 			InterceptionRequest IR = new InterceptionRequest(null, null, null, "kafka", null, null);
 			IR.setMess(mess);
-			droolsService.sendInterceptionRequest(IR, getContextBroker(), null, null);
+			droolsService.sendInterceptionRequest(IR, registerService.getContextBroker(this), null, null);
 
 		} catch (IOException e) {
 			logger.info("   Error in parsing Json");

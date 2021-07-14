@@ -70,28 +70,34 @@ For to execute its operations, the Security Controller need of Context Broker mo
 
 The API integrated for now are the following:
 
-| Resources     | Relative URLs              | Meaning                                        |
-| ------------- | -------------------------- | ---------------------------------------------- |
-| controller    | controller/register/       | The framework (main resource)                  |
+| Resources     | Relative URLs                        | Meaning                                        |
+| ------------- | ------------------------------------ | ---------------------------------------------- |
+| controller    | controller/register/                 | The framework (main resource)                  |
 | infrastucture | controller/register/insfrastructure  | XML file describing infrastructure information |
 | policy        | controller/register/policy           | yaml file describing the (reachability) policy |
 | event         | controller/register/event            | XML file describing events occured in ASTRID   |
+| firewall      | controller/register/firewallRules    | JSON file for inserting single firewall rules  |
 | deployment    | controller/register/deployment       | JSON file describing the deployment            |
 
 You can find more details and try them using the Swagger, that you can reachable to this URL: http://localhost:8083/controller/swagger-ui.html (after you launched the Astrid Controller).
 
 |         Resource          | Verb  |      Req.Body      | Query params |                        Meaning                         |      Verb      | Resp.Body  |
 | :-----------------------: | :---: | :----------------: | :----------: | :----------------------------------------------------: | :------------: | :--------: |
-|        controller         |  GET  |                    |              |                 Get the main resource                  |     200 OK     | Controller |
-| controller/infrastructure | POST  |                    |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
-| controller/infrastructure | POST  | InfrastructureInfo |              |      POST infrastructure information in valid XML      |     200 OK     |            |
+|        controller/register/        |  GET  |                    |              |                 Get the main resource                  |     200 OK     | Controller |
+| controller/register/insfrastructure | POST  |                    |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
+| controller/register/insfrastructure | POST  | InfrastructureInfo |              |      POST infrastructure information in valid XML      |     200 OK     |            |
 |                           |       |                    |              |                                                        |                |            |
-|     controller/event      | POST  |                    |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
-|     controller/event      | POST  |       Event        |              |        POST event related to the security agent        |     200 OK     |            |
+|     controller/register/event        | POST  |                    |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
+|    controller/register/event       | POST  |       Event        |              |        POST event related to the security agent        |     200 OK     |            |
 |                           |       |                    |              |                                                        |                |            |
-|     controller/policy     | POST  |                    |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
-|     controller/policy     | POST  |       Policy       |              |  POST reachability policy from the Security Dashboard  |     200 OK     |            |
-
+|     controller/register/policy     | POST  |                    |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
+|     controller/register/policy    | POST  |       Policy       |              |  POST reachability policy from the Security Dashboard  |     200 OK     |            |
+|                           |       |                    |              |                                                        |                |            |
+|     controller/register/deployment     | POST  |                    |              | POST request correctly but without any or correct body | 415 No Content |   reason   |
+|     controller/register/deployment     | POST  |       Policy       |              |  POST reachability policy from the Security Dashboard  |     200 OK     |            |
+|                           |       |                    |              |                                                        |                |            |
+|     controller/register/firewallRules     | GET  |                    |              | Retrieves all conigurations | 200 OK |   JSON|
+|      controller/register/firewallRules     | POST  |       Policy       |              |  POST reachability policy from the Security Dashboard  |     200 OK     |            |
 
 
 

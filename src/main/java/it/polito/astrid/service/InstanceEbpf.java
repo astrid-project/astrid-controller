@@ -69,7 +69,7 @@ public class InstanceEbpf {
 	public void ebpfAlarmRm(String command, String type, String message)
 			throws ContextBrokerException, IOException, JSONException, InterruptedException {
 		List<Ebpf> ebpfs = getEbpfCodes();
-		System.out.println("TTTTTTTTTTTTTTTTT Found ebpfs before remove	 "+ebpfs.size());
+		logger.info("TTTTTTTTTTTTTTTTT Found ebpfs before remove	 "+ebpfs.size());
 		for (Ebpf ebpf : ebpfs) {
 			
 			if (ebpf.getEbpf_program_catalog_id().equals(command)) {
@@ -77,7 +77,7 @@ public class InstanceEbpf {
 				logger.info("++++++++++ Searching in map for "+catalogId+" of ID "+ebpf.getId()+ " for message "+message);
 				if(catalogId!=null)
 				if(!catalogId.equals(message)) {
-					System.out.println("$$$$$$$ Found Ebpf to remove " + ebpf.getId()+" message "+dynMap.get(ebpf.getId()));
+					logger.info("$$$$$$$ Found Ebpf to remove " + ebpf.getId()+" message "+dynMap.get(ebpf.getId()));
 					remDynMon(ebpf.getId());
 				}
 				
@@ -147,14 +147,13 @@ public class InstanceEbpf {
 		logger.info("+++++++++ EBPF deploying " + type + " interface " + inter);
 		List<Execution_Environment> exec_env = new ArrayList<>();
 		exec_env = getExecutionEnvironment();
-		System.out.println("+++++++++ Exec-envs  = "+exec_env.size());
+		logger.info("+++++++++ Exec-envs  = "+exec_env.size());
 		Iterator<Execution_Environment> it = exec_env.iterator();
 		boolean trovato = false;
 		// recovery the id of exec_env that has the IP egual to source IP of the kafka
 		// message
 		while (it.hasNext() && trovato == false) {
 			Execution_Environment node = it.next();
-			System.out.println("############# Looking for exec "+node.getId());
 			if(node.getId().startsWith("sc-ebpf")) {
 				logger.info("+++++++++ Found exec-env "+node.getId());
 				creatDynMon(node.getId(), type, inter,message);
@@ -202,19 +201,19 @@ public class InstanceEbpf {
 					"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/ebpf-program",
 					requestBody, String.class);
 			if (result.getStatusCode() == HttpStatus.OK) {
-				System.out.println("++++++++++ DynMon created with id = " + "dyn-id-" + uid);
-				System.out.println("++++++++++ " + result.getBody());
+				logger.info("++++++++++ DynMon created with id = " + "dyn-id-" + uid);
+				logger.info("++++++++++ " + result.getBody());
 			
 			} else {
-				System.out.println("++++++++++ DynMon  with an error: " + result.getBody());
+				logger.info("++++++++++ DynMon  with an error: " + result.getBody());
 			}
 		} catch (Exception e) {
-			System.out.println("++++++++++ error while contatcting Context Broker module: " + e.getMessage());
-			System.out.println("++++++++++ error while contatcting Context Broker module: " + e.toString());
+			logger.info("++++++++++ error while contatcting Context Broker module: " + e.getMessage());
+			logger.info("++++++++++ error while contatcting Context Broker module: " + e.toString());
 			throw new IOException();
 		}
 		dynMap.put("dyn-id-"+uid,message);
-		System.out.println("--------- inserting to map key= " +"dyn-id-"+uid+ " value "+message	);
+		logger.info("--------- inserting to map key= " +"dyn-id-"+uid+ " value "+message	);
 		return "dyn-id-" + uid;
 	}
 
