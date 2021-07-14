@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
+import org.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -19,19 +20,24 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.converter.xml.Jaxb2RootElementHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 import it.polito.astrid.controllers.AstridComponentNotFoundException;
 import it.polito.astrid.controllers.ContextBrokerException;
 import it.polito.astrid.controllers.RegistrationController;
 import it.polito.astrid.models.Exec;
 import it.polito.astrid.models.Exec.Node;
+import it.polito.astrid.models.Configuration;
 import it.polito.astrid.models.Configuration.Agent;
+import it.polito.astrid.models.Configuration.Pipeline;
+import it.polito.contextbroker.model.Agent_Instance;
 import it.polito.contextbroker.model.Execution_Environment;
 import it.polito.contextbroker.model.Execution_Environment.LCP;
 import it.polito.verefoo.astrid.jaxb.Components.Component;
@@ -309,6 +315,49 @@ public class RegisterService {
 		}else {
 			logger.error("++++++++++ JSON FW not passed  with an error: " + result.getBody());
 			return result;
+		}
+		return result;
+	}
+
+	public ResponseEntity<String> registerDeployment(Configuration config) throws IOException {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.set("Authorization", "ASTRID " + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+		RestTemplate restTemplate = new RestTemplate();
+		
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.setSerializationInclusion(Include.NON_NULL);
+		
+		List<Agent_Instance> agents = new ArrayList<Agent_Instance>();
+		for (Pipeline pipeline : config.getDeployment().getPipelines()) {
+			for (Agent agentFile : pipeline.getAgents()) {
+				Agent_Instance agent = new Agent_Instance();
+				agent.setExec_env_id(agentFile.getExec_env_id());
+				agent.setAgent_catalog_id( agentFile.getName());
+				agent.setId(agentFile.getId());
+				agent.setStatus(pipeline.getStatus());
+				 agents.add(agent);
+				 
+			}
+		}
+		 
+		// Data attached to the request.
+		HttpEntity<List<Agent_Instance> > requestBody = new HttpEntity<List<Agent_Instance> >(agents, headers);
+		
+		ResponseEntity<String> result = null;
+		try {
+			// Send request with POST method.
+			result = restTemplate.postForEntity("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent", requestBody, String.class);
+			if (result.getStatusCode() == HttpStatus.OK) {
+				logger.info("++++++++++ Agents loaded created with file = "+agents);
+				return result;
+			}else {
+				logger.error("++++++++++ Agents  with an error: " + result.getBody());
+			}
+		}catch(Exception e) {
+			logger.error("++++++++++ error while contatcting Context Broker module: " + e.getMessage());
+			throw  new IOException();
+			
 		}
 		return result;
 	}

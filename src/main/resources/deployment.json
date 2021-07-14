@@ -1,91 +1,36 @@
 {
     "deployment": {
-        "id": "0cee9a51-8fda-4526-a8e9-cadad9f86535",
-        "name": "5g-use-case",
-        "namespace": "open5gs",
+       "id": "0cee9a51-8fda-4526-a8e9-cadad9f86535", 
+        "name": "5g-use-case",  
+        "namespace": "open5gs",   
         "pipelines": [
             {
-                "id": "731c6a75-9fa4-42c3-be2c-9cfb09637e86",
-                "name": "firewall",
+                 "id": "731c6a75-9fa4-42c3-be2c-9cfb09637e86", 
+                "name": "firewall",  
+                "status": "started",
                 "agents": [
                     {
-                        "id": "46f9ef03-2d0d-4ae4-8675-0fd192179e3c",
-                        "name": "cubebeat",
-                        "ip": "192.168.122.22",
-                        "port": 5000,
-                        "arguments": [
+						"id": "46f9ef03-2d0d-4ae4-8675-0fd192179e3c", 
+                        "name": "cubebeat",  
+                        "ip": "192.168.122.22",  
+                        "port": 5000,  
+                        "exec_env_id": "idany", 
+                        "operations": [  
                             {
-                                "name": "enabled",
-                                "type": "boolean",
+                                "id": "enabled",  
+                                "type": "parameter",  
                                 "value": "true"
                             },
                             {
-                                "name": "period",
-                                "type": "int",
-                                "value": 10
-                            }
-                        ]
-                    },
-                    {
-                        "id": "fe869233-b4c1-49cf-9a45-10424709b6d9",
-                        "name": "cubebeat",
-                        "ip": "192.168.122.23",
-                        "port": 5000,
-                        "arguments": [
-                            {
-                                "name": "enabled",
-                                "type": "boolean",
-                                "value": "true"
-                            },
-                            {
-                                "name": "period",
-                                "type": "int",
-                                "value": 10
+                                "id": "period",    
+                                "type": "action",
+                                "mode": 10
                             }
                         ]
                     }
                 ],
-                "algorithms": [],
+                "algorithms": [], 
                 "configuration": "kind: Graph\nmetadata:\n  # This should be unique throughout the marketplace\n  name: name-of-the-graph\nspec:\n  policies:\n      - from: nginx\n        to: apache\n        action: drop\n      - from: apache\n        to: nodejs\n        action: forward"
-            },
-            {
-                "id": "b35edbfc-4d12-4487-a79f-9ddd499769fa",
-                "name": "custom",
-                "agents": [
-                    {
-                        "id": "2ff8df61-0c45-4b70-bc91-e4131bc67897",
-                        "name": "packetbeat",
-                        "ip": "192.168.122.22",
-                        "port": 5000,
-                        "arguments": [
-                            {
-                                "name": "enabled",
-                                "type": "boolean",
-                                "value": "true"
-                            },
-                            {
-                                "name": "period",
-                                "type": "int",
-                                "value": 10
-                            }
-                        ]
-                    }
-                ],
-                "algorithms": [
-                    {
-                        "id": "69ec35bb-8a97-444e-943c-b65ea95c041b",
-                        "name": "atk",
-                        "arguments": [
-                            {
-                                "name": "window",
-                                "type": "int",
-                                "value": "20"
-                            }
-                        ]
-                    }
-
-                ],
-                "configuration": ""
             }
         ]
     }

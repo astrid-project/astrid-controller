@@ -168,11 +168,10 @@ public class RegistrationController {
 	@ApiResponses(value = { @ApiResponse(code = 201, message = "Created"),
 			@ApiResponse(code = 400, message = "Bad Request"), })
 	@ResponseBody
-	public ResponseEntity<Configuration> registerPolicy(@RequestBody Configuration config)
+	public ResponseEntity<Configuration> registerDeployment(@RequestBody Configuration config)
 			throws AstridComponentNotFoundException, IOException, ResourceNotFoundException {
-		InterceptionRequest IR = new InterceptionRequest(null, null, null, "/register/deployment", null, null);
-		IR.setDeployement(config);
-		droolsService.sendInterceptionRequest(IR, registerService.getContextBroker(this), null, null);
+		registerService.setComponent(registerService.getContextBroker(this));
+		registerService.registerDeployment(config);
 		return new ResponseEntity<Configuration>(config, HttpStatus.OK);
 	}
 
