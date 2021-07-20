@@ -71,12 +71,12 @@ public class InstanceEbpf {
 		List<Ebpf> ebpfs = getEbpfCodes();
 		logger.info("TTTTTTTTTTTTTTTTT Found ebpfs before remove	 "+ebpfs.size());
 		for (Ebpf ebpf : ebpfs) {
-			
+			logger.info("++++++++++ Searching in map for "+ebpf.getEbpf_program_catalog_id()+" matching "+ " for command "+command+" will search for id "+ebpf.getId());
 			if (ebpf.getEbpf_program_catalog_id().equals(command)) {
-				String catalogId =dynMap.get(ebpf.getId());
-				logger.info("++++++++++ Searching in map for "+catalogId+" of ID "+ebpf.getId()+ " for message "+message);
-				if(catalogId!=null)
-				if(!catalogId.equals(message)) {
+				String mapTypeMessage =dynMap.get(ebpf.getId());
+				logger.info("--------- Searching in map for mapTypeMessage "+mapTypeMessage+" of ID "+ebpf.getId()+ " for message "+message);
+				if(mapTypeMessage!=null)
+				if(!mapTypeMessage.equals(message)) {
 					logger.info("$$$$$$$ Found Ebpf to remove " + ebpf.getId()+" message "+dynMap.get(ebpf.getId()));
 					remDynMon(ebpf.getId());
 				}

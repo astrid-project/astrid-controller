@@ -190,7 +190,7 @@ public class RegistrationController {
 			for (File iterable_element : folder.listFiles()) {
 				if (iterable_element.isFile()) {
 					String fileString = new String(Files.readAllBytes(Paths.get(iterable_element.getCanonicalPath())), StandardCharsets.UTF_8);
-					registerService.uploadToCatalog(fileString);
+					//registerService.uploadToCatalog(fileString);
 				}
 			}
 		} catch (java.io.IOException e) {
@@ -207,18 +207,7 @@ public class RegistrationController {
 		return new ResponseEntity<Exec>(exec, HttpStatus.OK);
 	}
 
-	private void uploadInitialBau(String bau) throws AstridComponentNotFoundException {
-		KafkaMessage mess = new KafkaMessage();
-		NetworkStatus status = new NetworkStatus();
-		status.setmUseCase(bau);
-		status.networkStatus="BAU";
-		mess.setStatus(status);
 
-		InterceptionRequest IR = new InterceptionRequest(null, null, null, "kafka", null, null);
-		IR.setMess(mess);
-		System.out.println("____ Uploading initial BAUs ");
-		droolsService.sendInterceptionRequest(IR, registerService.getContextBroker(this), null, null);
-	}
 
 	@ApiOperation(value = "registerEvent", notes = "Recieves an Event and sends it to Verikube. ")
 	@RequestMapping(method = RequestMethod.POST, value = "/register/event", produces = "application/xml", consumes = "application/xml")
@@ -284,6 +273,21 @@ public class RegistrationController {
 		logger.info("++++++++++ Receive testing-result Kafka Messages: " + cr.value().toString());
 	}
 
+	
+	private void uploadInitialBau(String bau) throws AstridComponentNotFoundException {
+		KafkaMessage mess = new KafkaMessage();
+		NetworkStatus status = new NetworkStatus();
+		status.setmUseCase(bau);
+		status.networkStatus="BAU";
+		mess.setStatus(status);
+
+		InterceptionRequest IR = new InterceptionRequest(null, null, null, "kafka", null, null);
+		IR.setMess(mess);
+		System.out.println("____ Uploading initial BAUs ");
+		System.out.println("##### " + status.networkStatus + " " + status.getmUseCase());
+		droolsService.sendInterceptionRequest(IR, registerService.getContextBroker(this), null, null);
+	}
+	
 	@KafkaListener(topics = "AstridProxyPublishStatus", autoStartup = "${listen.auto.kafka}")
 	public void listen2(ConsumerRecord<?, ?> cr) {
 		String inputS = cr.value().toString();
