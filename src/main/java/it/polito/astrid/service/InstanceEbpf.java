@@ -72,7 +72,6 @@ public class InstanceEbpf {
 		logger.info("TTTTTTTTTTTTTTTTT Found ebpfs before remove	 "+ebpfs.size());
 		for (Ebpf ebpf : ebpfs) {
 			logger.info("++++++++++ Searching in map for "+ebpf.getEbpf_program_catalog_id()+" matching "+ " for command "+command+" will search for id "+ebpf.getId());
-			if (ebpf.getEbpf_program_catalog_id().equals(command)) {
 				String mapTypeMessage =dynMap.get(ebpf.getId());
 				logger.info("--------- Searching in map for mapTypeMessage "+mapTypeMessage+" of ID "+ebpf.getId()+ " for message "+message);
 				if(mapTypeMessage!=null)
@@ -84,7 +83,6 @@ public class InstanceEbpf {
 				
 				//remDynMon(ebpf.getId());
 
-			}
 		}
 	}
 

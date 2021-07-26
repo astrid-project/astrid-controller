@@ -1,6 +1,7 @@
 package it.polito.astrid.models;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 // import com.fasterxml.jackson.databind.ObjectMapper; // version 2.11.1
@@ -8,9 +9,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /* ObjectMapper om = new ObjectMapper();
 Root root = om.readValue(myJsonString), Root.class); */
 
-
+@JsonInclude(JsonInclude.Include.NON_EMPTY) 
 public class Configuration{
-    @JsonProperty("deployment") 
+	@JsonProperty("deployment") 
     public Deployment getDeployment() { 
 		 return this.deployment; } 
     public void setDeployment(Deployment deployment) { 

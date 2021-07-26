@@ -10,6 +10,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.XMLConstants;
@@ -74,7 +75,7 @@ public class RegistrationController {
 				logger.info("-------> Kafka IPs " + System.getenv("KAFKA_BOOTSTRAP_SERVER"));
 	    }else {
                 logger.info("-------> Kafka IP was not set " + System.getenv("KAFKA_BOOTSTRAP_SERVER"));
-	    	System.setProperty("spring.kafka.bootstrap-servers", "10.10.11.94:9092");
+	    	System.setProperty("spring.kafka.bootstrap-servers", "192.168.31.200:9092");
 	    }
 		droolsService = new DroolsService();
 		registerService = new RegisterService();
@@ -168,11 +169,12 @@ public class RegistrationController {
 	@ApiResponses(value = { @ApiResponse(code = 201, message = "Created"),
 			@ApiResponse(code = 400, message = "Bad Request"), })
 	@ResponseBody
-	public ResponseEntity<Configuration> registerDeployment(@RequestBody Configuration config)
+	public ResponseEntity<String> registerDeployment(@RequestBody Configuration config)
 			throws AstridComponentNotFoundException, IOException, ResourceNotFoundException {
 		registerService.setComponent(registerService.getContextBroker(this));
-		registerService.registerDeployment(config);
-		return new ResponseEntity<Configuration>(config, HttpStatus.OK);
+		
+		String result = registerService.registerDeployment(config);
+		return new ResponseEntity<String>(result, HttpStatus.OK);
 	}
 
 	@ApiOperation(value = "createExecEnv", notes = "Recieves ExecEnv . ")
@@ -181,7 +183,7 @@ public class RegistrationController {
 			@ApiResponse(code = 400, message = "Bad Request"), })
 	@ResponseBody
 	public ResponseEntity<Exec> registerExecEnv(@RequestBody Exec exec)
-			throws AstridComponentNotFoundException, ResourceNotFoundException {
+			throws AstridComponentNotFoundException, ResourceNotFoundException, InterruptedException {
 		registerService.setComponent(registerService.getContextBroker(this));
 		try {
 			registerService.registerExec(exec);
@@ -196,6 +198,7 @@ public class RegistrationController {
 		} catch (java.io.IOException e) {
 			System.out.println("___> "+e);
 		}
+		TimeUnit.SECONDS.sleep(10);
 		
 		try {
 			uploadInitialBau("DNS");	

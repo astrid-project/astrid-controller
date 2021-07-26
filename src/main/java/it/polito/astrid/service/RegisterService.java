@@ -22,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.converter.xml.Jaxb2RootElementHttpMessageConverter;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -319,7 +320,7 @@ public class RegisterService {
 		return result;
 	}
 
-	public ResponseEntity<String> registerDeployment(Configuration config) throws IOException {
+	public String registerDeployment(Configuration config) throws IOException {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authorization", "ASTRID " + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
@@ -350,16 +351,16 @@ public class RegisterService {
 			result = restTemplate.postForEntity("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent", requestBody, String.class);
 			if (result.getStatusCode() == HttpStatus.OK) {
 				logger.info("++++++++++ Agents loaded created with file = "+agents);
-				return result;
+				return result.getBody();
 			}else {
 				logger.error("++++++++++ Agents  with an error: " + result.getBody());
 			}
-		}catch(Exception e) {
-			logger.error("++++++++++ error while contatcting Context Broker module: " + e.getMessage());
-			throw  new IOException();
+		}catch(HttpClientErrorException e) {
+			logger.error("++++++++++ error while contatcting Context Broker module: " + e);
+			return e.getResponseBodyAsString();
 			
 		}
-		return result;
+		return result.getBody();
 	}
 
 	
