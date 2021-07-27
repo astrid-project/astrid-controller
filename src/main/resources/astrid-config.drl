@@ -132,9 +132,11 @@ rule "DNS BAU"
 				IFS.ebpfAlarm("dns_bau_ip","ogstun",k.status.networkStatus);
 end
 
+
+
 rule "DNS WARN"
         when
-        		k:KafkaMessage(status.mUseCase=="DNS"&&(status.networkStatus=="ALARM"||status.networkStatus=="WARN"))
+        		k:KafkaMessage(status.mUseCase=="DNS"&&(status.networkStatus=="WARN"))
                 component1: Component(name=="ContextBroker")
                 ids: DynMonIDs()
         then
@@ -142,6 +144,18 @@ rule "DNS WARN"
 				System.out.println("^^^^^^ DNS WARN");
 				IFS.ebpfAlarmRm("dns_warn_ip",k.status.mUseCase,k.status.networkStatus);
 				IFS.ebpfAlarm("dns_warn_ip","ogstun",k.status.networkStatus);
+end
+
+rule "DNS ALARM"
+        when
+        		k:KafkaMessage(status.mUseCase=="DNS"&&(status.networkStatus=="ALARM"))
+                component1: Component(name=="ContextBroker")
+                ids: DynMonIDs()
+        then
+        		InstanceEbpf IFS = new InstanceEbpf(component1,ids);
+				System.out.println("^^^^^^ DNS ALARM");
+				IFS.ebpfAlarmRm("dns_drop_ip",k.status.mUseCase,k.status.networkStatus);
+				IFS.ebpfAlarm("dns_drop_ip","ogstun",k.status.networkStatus);
 end
 
 
