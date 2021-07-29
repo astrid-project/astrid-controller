@@ -363,6 +363,11 @@ public class RegisterService {
 		return result.getBody();
 	}
 
+	public void removeDynMon() {
+		// TODO Auto-generated method stub
+		
+	}
+
 	
 
 }

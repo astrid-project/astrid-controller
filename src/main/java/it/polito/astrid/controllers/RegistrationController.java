@@ -132,11 +132,17 @@ public class RegistrationController {
 	}
 	
 	
-	@RequestMapping(value = "/fix", method = RequestMethod.GET)
+	@RequestMapping(value = "/removeExec", method = RequestMethod.GET)
 	@ResponseBody
 	public void removeExecEnvs() throws ContextBrokerException, AstridComponentNotFoundException {
 		registerService.setComponent(registerService.getContextBroker(this));
 		registerService.removeExecEnvs();
+	}
+	@RequestMapping(value = "/removeDyn", method = RequestMethod.GET)
+	@ResponseBody
+	public void removeDynMon() throws ContextBrokerException, AstridComponentNotFoundException {
+		registerService.setComponent(registerService.getContextBroker(this));
+		registerService.removeDynMon();
 	}
 
 	@ApiOperation(value = "registerInfrastructure", notes = "Recieves Infrastructure info and sends it to Verikube. Waits for result and sends it back", response = NFV.class)
@@ -205,7 +211,7 @@ public class RegistrationController {
 		} catch (Exception e) {
 		}
 		
-		uploadInitialBau("NTP");
+		//uploadInitialBau("NTP");
 
 		return new ResponseEntity<Exec>(exec, HttpStatus.OK);
 	}
