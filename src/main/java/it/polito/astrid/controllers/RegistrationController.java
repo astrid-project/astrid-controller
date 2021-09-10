@@ -183,8 +183,8 @@ public class RegistrationController {
 		return new ResponseEntity<String>(result, HttpStatus.OK);
 	}
 	
-	@ApiOperation(value = "registerDeployement", notes = "Recieves deployement . ")
-	@RequestMapping(method = RequestMethod.POST, value = "/register/deployement", produces = "text/plain", consumes = "application/json")
+	@ApiOperation(value = "deleteDeployement", notes = "delete deployement . ")
+	@RequestMapping(method = RequestMethod.DELETE, value = "/register/deployement", produces = "text/plain")
 	@ApiResponses(value = { @ApiResponse(code = 201, message = "Created"),
 			@ApiResponse(code = 400, message = "Bad Request"), })
 	@ResponseBody
