@@ -174,7 +174,7 @@ public class InstanceEbpf {
 	}
 
 	private String creatDynMon(String ebpf_id, String type, String interface_d, String message) throws IOException, JSONException {
-
+	
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authorization", "ASTRID "
@@ -188,6 +188,10 @@ public class InstanceEbpf {
 		dynObject.put("description", "Collect");
 		dynObject.put("exec_env_id", ebpf_id);
 		dynObject.put("interface", interface_d);
+		
+		if(checkEbpfExist(ebpf_id,message)) {
+			return "";
+		}
 
 		// Data attached to the request.
 		HttpEntity<String> requestBody = new HttpEntity<String>(dynObject.toString(), headers);
@@ -213,6 +217,22 @@ public class InstanceEbpf {
 		dynMap.put("dyn-id-"+uid,message);
 		logger.info("--------- inserting to map key= " +"dyn-id-"+uid+ " value "+message	);
 		return "dyn-id-" + uid;
+	}
+
+	private boolean checkEbpfExist(String exec_id, String message) {
+		List<Ebpf> ebpfs = getEbpfCodes();
+		for (Ebpf ebpf : ebpfs) {
+			if(ebpf.getExec_env_id().equals(exec_id)) {
+				logger.info("!!!  Found ebpf in exec= " +exec_id );
+				String mapTypeMessage =dynMap.get(ebpf.getId());
+				if(mapTypeMessage.equals(message)) {
+					logger.info("!!!  With the same type= " +message );
+					return true;
+				}
+			}
+
+		}
+		return false;
 	}
 
 	private String getAddressWithMask(String ip) {

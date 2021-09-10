@@ -182,6 +182,19 @@ public class RegistrationController {
 		String result = registerService.registerDeployment(config);
 		return new ResponseEntity<String>(result, HttpStatus.OK);
 	}
+	
+	@ApiOperation(value = "registerDeployement", notes = "Recieves deployement . ")
+	@RequestMapping(method = RequestMethod.POST, value = "/register/deployement", produces = "text/plain", consumes = "application/json")
+	@ApiResponses(value = { @ApiResponse(code = 201, message = "Created"),
+			@ApiResponse(code = 400, message = "Bad Request"), })
+	@ResponseBody
+	public ResponseEntity<String> deleteDeployment()
+			throws AstridComponentNotFoundException, IOException, ResourceNotFoundException, ContextBrokerException {
+		registerService.setComponent(registerService.getContextBroker(this));
+		
+		String result = registerService.deleteDeployment();
+		return new ResponseEntity<String>(result, HttpStatus.OK);
+	}
 
 	@ApiOperation(value = "createExecEnv", notes = "Recieves ExecEnv . ")
 	@RequestMapping(method = RequestMethod.POST, value = "/register/execenv", produces = "text/plain", consumes = "application/json")

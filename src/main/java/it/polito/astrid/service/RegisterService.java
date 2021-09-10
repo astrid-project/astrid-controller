@@ -1,11 +1,13 @@
 package it.polito.astrid.service;
 
+import it.polito.astrid.models.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
@@ -26,16 +28,16 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import ch.qos.logback.core.joran.spi.Interpreter;
 import it.polito.astrid.controllers.AstridComponentNotFoundException;
 import it.polito.astrid.controllers.ContextBrokerException;
 import it.polito.astrid.controllers.RegistrationController;
-import it.polito.astrid.models.Exec;
 import it.polito.astrid.models.Exec.Node;
-import it.polito.astrid.models.Configuration;
 import it.polito.astrid.models.Configuration.Agent;
 import it.polito.astrid.models.Configuration.Pipeline;
 import it.polito.contextbroker.model.Agent_Instance;
@@ -46,110 +48,111 @@ import net.minidev.json.JSONObject;
 
 public class RegisterService {
 	private Component ContextBroker;
-	private static final Logger logger=LoggerFactory.getLogger(RegisterService.class);
+	private static final Logger logger = LoggerFactory.getLogger(RegisterService.class);
 	String prefix = "sc-ebpf-";
+
 	public RegisterService() {
 	}
-	
-	public String registerExec( Exec execs) throws IOException {
+
+	public String registerExec(Exec execs) throws IOException {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.set("Authorization", "ASTRID " + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
-		
+		headers.set("Authorization", "ASTRID "
+				+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+
 		RestTemplate restTemplate = new RestTemplate();
-		
+
 		int uid = generateUniqueId();
 		List<Execution_Environment> execList = new ArrayList<Execution_Environment>();
 		for (Node name : execs.getExecenvs().getNodes()) {
 			Execution_Environment exec = new Execution_Environment();
-			Execution_Environment.LCP  lcp = exec.new LCP();
+			Execution_Environment.LCP lcp = exec.new LCP();
 			lcp.setPort(execs.getExecenvs().getLcp());
 			lcp.setHttps(false);
 			exec.setLcp(lcp);
-			exec.setDescription("polycube for ebpf "+uid+" "+name.getId());
-			exec.setId(prefix+uid+" "+name.getId());
+			exec.setDescription("polycube for ebpf " + uid + " " + name.getId());
+			exec.setId(prefix + uid + " " + name.getId());
 			exec.setType_id("container-docker");
-			exec.setHostname( name.getId()+"."+execs.getExecenvs().getNamespace());
-			exec.setEnabled( "Yes");
+			exec.setHostname(name.getId() + "." + execs.getExecenvs().getNamespace());
+			exec.setEnabled("Yes");
 			execList.add(exec);
 		}
-		
-		
+
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.setSerializationInclusion(Include.NON_NULL);
-		
+
 		// Data attached to the request.
 		HttpEntity<String> requestBody = new HttpEntity<String>(mapper.writeValueAsString(execList), headers);
-		
+
 		ResponseEntity<String> result = null;
 		try {
 			// Send request with POST method.
-			result = restTemplate.postForEntity("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/exec-env", requestBody, String.class);
+			result = restTemplate.postForEntity(
+					"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/exec-env", requestBody,
+					String.class);
 			if (result.getStatusCode() == HttpStatus.OK) {
-				logger.info("++++++++++ Execution Enviroment created with id = "+prefix+uid);
-			}else {
+				logger.info("++++++++++ Execution Enviroment created with id = " + prefix + uid);
+			} else {
 				logger.error("++++++++++ Execution Enviroment  with an error: " + result.getBody());
 			}
-		}catch(Exception e) {
+		} catch (Exception e) {
 			logger.error("++++++++++ error while contatcting Context Broker module: " + e.getMessage());
 			throw new IOException();
 		}
-		return "sc-ebpf-"+uid;
+		return "sc-ebpf-" + uid;
 	}
 
-	 public static int generateUniqueId() {      
-	        UUID idOne = UUID.randomUUID();
-	        String str=""+idOne;        
-	        int uid=str.hashCode();
-	        String filterStr=""+uid;
-	        str=filterStr.replaceAll("-", "");
-	        return Integer.parseInt(str);
-	    }
+	public static int generateUniqueId() {
+		UUID idOne = UUID.randomUUID();
+		String str = "" + idOne;
+		int uid = str.hashCode();
+		String filterStr = "" + uid;
+		str = filterStr.replaceAll("-", "");
+		return Integer.parseInt(str);
+	}
 
 	public void setComponent(Component contextBroker) {
-		this.ContextBroker=contextBroker;
-		
+		this.ContextBroker = contextBroker;
+
 	}
-	private static String usingBufferedReader(String filePath) 
-    {
-        StringBuilder contentBuilder = new StringBuilder();
-        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) 
-        {
- 
-            String sCurrentLine;
-            while ((sCurrentLine = br.readLine()) != null) 
-            {
-                contentBuilder.append(sCurrentLine).append("\n");
-            }
-        } 
-        catch (IOException e) 
-        {
-            e.printStackTrace();
-        }
-        return contentBuilder.toString();
-    }
+
+	private static String usingBufferedReader(String filePath) {
+		StringBuilder contentBuilder = new StringBuilder();
+		try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+
+			String sCurrentLine;
+			while ((sCurrentLine = br.readLine()) != null) {
+				contentBuilder.append(sCurrentLine).append("\n");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return contentBuilder.toString();
+	}
 
 	public void uploadToCatalog(String fileLocation) throws IOException {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.set("Authorization", "ASTRID " + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
-	
+		headers.set("Authorization", "ASTRID "
+				+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+
 		RestTemplate restTemplate = new RestTemplate();
-		
-		
+
 		// Data attached to the request.
 		HttpEntity<String> requestBody = new HttpEntity<String>(fileLocation, headers);
-		
+
 		ResponseEntity<String> result = null;
 		try {
 			// Send request with POST method.
-			result = restTemplate.postForEntity("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/catalog/ebpf-program", requestBody, String.class);
+			result = restTemplate.postForEntity(
+					"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/catalog/ebpf-program",
+					requestBody, String.class);
 			if (result.getStatusCode() == HttpStatus.OK) {
-				logger.info("++++++++++ EBPF loaded created with file = "+fileLocation);
-			}else {
+				logger.info("++++++++++ EBPF loaded created with file = " + fileLocation);
+			} else {
 				logger.error("++++++++++ Execution Enviroment  with an error: " + result.getBody());
 			}
-		}catch(Exception e) {
+		} catch (Exception e) {
 			logger.error("++++++++++ error while contatcting Context Broker module: " + e.getMessage());
 			throw new IOException();
 		}
@@ -158,20 +161,23 @@ public class RegisterService {
 	public ResponseEntity<String> passthroughFW(JSONObject firewall) {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.set("Authorization", "ASTRID " + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
-	
+		headers.set("Authorization", "ASTRID "
+				+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+
 		RestTemplate restTemplate = new RestTemplate();
-		
+
 		// Data attached to the request.
 		HttpEntity<JSONObject> requestBody = new HttpEntity<JSONObject>(firewall, headers);
-		System.out.println("$$$$$$$$$$$$$$$$ "+requestBody.toString());
+		System.out.println("$$$$$$$$$$$$$$$$ " + requestBody.toString());
 		ResponseEntity<String> result = null;
-			// Send request with POST method.
-		result = restTemplate.exchange("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent", HttpMethod.PUT,requestBody, String.class);
-		logger.info("++++++++++ Result = "+result);
+		// Send request with POST method.
+		result = restTemplate.exchange(
+				"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent",
+				HttpMethod.PUT, requestBody, String.class);
+		logger.info("++++++++++ Result = " + result);
 		if (result.getStatusCode() == HttpStatus.OK) {
-			logger.info("++++++++++ JSON FW passed = "+result.getBody());
-		}else {
+			logger.info("++++++++++ JSON FW passed = " + result.getBody());
+		} else {
 			logger.error("++++++++++ JSON FW not passed  with an error: " + result.getBody());
 			return result;
 		}
@@ -181,23 +187,23 @@ public class RegisterService {
 	public void removeExecEnvs() throws ContextBrokerException {
 		List<Execution_Environment> exec_env = new ArrayList<>();
 		exec_env = getExecutionEnvironment();
-		
-		logger.info("+++++++++ Exec-envs  = "+exec_env.size());
+
+		logger.info("+++++++++ Exec-envs  = " + exec_env.size());
 		Iterator<Execution_Environment> it = exec_env.iterator();
 		boolean trovato = false;
 		// recovery the id of exec_env that has the IP egual to source IP of the kafka
 		// message
 		while (it.hasNext() && trovato == false) {
 			Execution_Environment node = it.next();
-			logger.info("############# Looking for exec "+node.getId());
-			if(node.getId().startsWith("sc-ebpf")) {
-				logger.info("+++++++++ Found exec-env "+node.getId());
+			logger.info("############# Looking for exec " + node.getId());
+			if (node.getId().startsWith("sc-ebpf")) {
+				logger.info("+++++++++ Found exec-env " + node.getId());
 				removeExecPost(node.getId());
 			}
 		}
-		
+
 	}
-	
+
 	private void removeExecPost(String id) {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -207,11 +213,10 @@ public class RegisterService {
 		// Data attached to the request.
 		HttpEntity<?> requestBody = new HttpEntity<Object>(headers);
 		ResponseEntity<String> result = null;
-		String urlA = "http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort()
-		+ "/exec-env/" + id;
+		String urlA = "http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/exec-env/" + id;
 		result = restTemplate.exchange(urlA, HttpMethod.DELETE, requestBody, String.class);
 		if (result.getStatusCode() == HttpStatus.OK) {
-			logger.info("+++++++++  exec-env succesfully removed"+id);
+			logger.info("+++++++++  exec-env succesfully removed" + id);
 		}
 	}
 
@@ -219,32 +224,32 @@ public class RegisterService {
 		List<Execution_Environment> exec_env = new ArrayList<>();
 		ObjectMapper objectMapper = new ObjectMapper();
 		RestTemplate restTemplate = new RestTemplate();
-		
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authorization", "ASTRID "
 				+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
 		HttpEntity<?> requestBody = new HttpEntity<Object>(headers);
-		
+
 		Jaxb2RootElementHttpMessageConverter converter = new Jaxb2RootElementHttpMessageConverter();
 		converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
 		restTemplate.setMessageConverters(Arrays.asList(converter, new StringHttpMessageConverter()));
 		try {
-			logger.error("_________ "+ContextBroker.getIPAddress()+ContextBroker.getPort() +" "+requestBody);
+			logger.error("_________ " + ContextBroker.getIPAddress() + ContextBroker.getPort() + " " + requestBody);
 			ResponseEntity<String> response = restTemplate.exchange(
 					"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/exec-env",
 					HttpMethod.GET, requestBody, String.class, 1);
-			logger.error(response.getStatusCode()+response.getBody());
+			logger.error(response.getStatusCode() + response.getBody());
 			exec_env = Arrays.asList(objectMapper.readValue(response.getBody(), Execution_Environment[].class));
 		} catch (Exception e) {
-			logger.error(
-					"+++++++++ error while asking the execution environments to Context Broker: " + e);
+			logger.error("+++++++++ error while asking the execution environments to Context Broker: " + e);
 			throw new ContextBrokerException(e.getMessage());
 		}
 		return exec_env;
 	}
 
-	public Component getVerefooInfo(RegistrationController registrationController) throws AstridComponentNotFoundException {
+	public Component getVerefooInfo(RegistrationController registrationController)
+			throws AstridComponentNotFoundException {
 		if (registrationController.AstridComponents == null) {
 			RegistrationController.logger.error("There aren't ASTRID components configure.");
 			throw new AstridComponentNotFoundException("Unable to contact external module");
@@ -282,7 +287,8 @@ public class RegisterService {
 		return C;
 	}
 
-	public Component getContextBroker(RegistrationController registrationController) throws AstridComponentNotFoundException {
+	public Component getContextBroker(RegistrationController registrationController)
+			throws AstridComponentNotFoundException {
 		if (registrationController.AstridComponents == null) {
 			RegistrationController.logger.error("There aren't ASTRID components configure.");
 			throw new AstridComponentNotFoundException("Unable to contact external module");
@@ -301,73 +307,188 @@ public class RegisterService {
 	public ResponseEntity<String> passthroughFWget() {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.set("Authorization", "ASTRID " + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
-	
+		headers.set("Authorization", "ASTRID "
+				+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+
 		RestTemplate restTemplate = new RestTemplate();
-		
+
 		// Data attached to the request.
 		HttpEntity<?> requestBody = new HttpEntity<Object>(headers);
 		ResponseEntity<String> result = null;
-			// Send request with POST method.
-		result = restTemplate.exchange("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent", HttpMethod.GET,requestBody, String.class);
-		logger.info("++++++++++ Result = "+result);
+		// Send request with POST method.
+		result = restTemplate.exchange(
+				"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent",
+				HttpMethod.GET, requestBody, String.class);
+		logger.info("++++++++++ Result = " + result);
 		if (result.getStatusCode() == HttpStatus.OK) {
-			logger.info("++++++++++ JSON FW passed = "+result.getBody());
-		}else {
+			logger.info("++++++++++ JSON FW passed = " + result.getBody());
+		} else {
 			logger.error("++++++++++ JSON FW not passed  with an error: " + result.getBody());
 			return result;
 		}
 		return result;
 	}
 
+	public void registerExecDeployment (Configuration config) throws IOException {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.set("Authorization", "ASTRID "
+				+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+		RestTemplate restTemplate = new RestTemplate();
+
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.setSerializationInclusion(Include.NON_NULL);
+
+		// registering execs
+		HashMap<String, Execution_Environment> map_execs = new HashMap<String, Execution_Environment>();
+		for (Pipeline iterable_element : config.getDeployment().getPipelines()) {
+			for (Agent agents : iterable_element.getAgents()) {
+				Execution_Environment exec = new Execution_Environment();
+				Execution_Environment.LCP lcp = exec.new LCP();
+				lcp.setPort(5000);
+				lcp.setHttps(false);
+				exec.setLcp(lcp);
+				exec.setDescription("polycube for ebpf ");
+				exec.setId(agents.getExec_env_id());
+				exec.setType_id("container-docker");
+				exec.setHostname(agents.getDeployment() + "." + config.getDeployment().getNamespace());
+				exec.setEnabled("Yes");
+				map_execs.put(agents.getExec_env_id(), exec);
+			}
+		}
+		List<Execution_Environment> execList = new ArrayList<Execution_Environment>(map_execs.values());
+
+		// Data attached to the request.
+		HttpEntity<String> requestBody_exec = new HttpEntity<String>(mapper.writeValueAsString(execList), headers);
+
+		ResponseEntity<String> result_exec = null;
+		try {
+			// Send request with POST method.
+			result_exec = restTemplate.postForEntity(
+					"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/exec-env", requestBody_exec,
+					String.class);
+			if (result_exec.getStatusCode() == HttpStatus.OK) {
+				logger.info("++++++++++ Execution Enviroment created with id = " );
+			} else {
+				logger.error("++++++++++ Execution Enviroment  with an error: " + result_exec.getBody());
+			}
+		} catch (Exception e) {
+			logger.error("++++++++++ error while contatcting Context Broker module: " + e.getMessage());
+			throw new IOException();
+		}
+		
+	}
 	public String registerDeployment(Configuration config) throws IOException {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.set("Authorization", "ASTRID " + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+		headers.set("Authorization", "ASTRID "
+				+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
 		RestTemplate restTemplate = new RestTemplate();
-		
+
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.setSerializationInclusion(Include.NON_NULL);
+
 		
+		registerExecDeployment(config);
+		//register agents
 		List<Agent_Instance> agents = new ArrayList<Agent_Instance>();
 		for (Pipeline pipeline : config.getDeployment().getPipelines()) {
 			for (Agent agentFile : pipeline.getAgents()) {
 				Agent_Instance agent = new Agent_Instance();
 				agent.setExec_env_id(agentFile.getExec_env_id());
-				agent.setAgent_catalog_id( agentFile.getName());
+				agent.setAgent_catalog_id(agentFile.getName());
 				agent.setId(agentFile.getId());
 				agent.setStatus(pipeline.getStatus());
-				 agents.add(agent);
-				 
+				agents.add(agent);
+
 			}
 		}
-		 
+
 		// Data attached to the request.
-		HttpEntity<List<Agent_Instance> > requestBody = new HttpEntity<List<Agent_Instance> >(agents, headers);
-		
+		HttpEntity<List<Agent_Instance>> requestBody = new HttpEntity<List<Agent_Instance>>(agents, headers);
+
 		ResponseEntity<String> result = null;
 		try {
 			// Send request with POST method.
-			result = restTemplate.postForEntity("http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent", requestBody, String.class);
+			result = restTemplate.postForEntity(
+					"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent",
+					requestBody, String.class);
 			if (result.getStatusCode() == HttpStatus.OK) {
-				logger.info("++++++++++ Agents loaded created with file = "+agents);
+				logger.info("++++++++++ Agents loaded created with file = " + agents);
 				return result.getBody();
-			}else {
+			} else {
 				logger.error("++++++++++ Agents  with an error: " + result.getBody());
 			}
-		}catch(HttpClientErrorException e) {
+		} catch (HttpClientErrorException e) {
 			logger.error("++++++++++ error while contatcting Context Broker module: " + e);
 			return e.getResponseBodyAsString();
-			
+
 		}
+
 		return result.getBody();
 	}
 
 	public void removeDynMon() {
 		// TODO Auto-generated method stub
-		
+
 	}
 
-	
+	public String deleteDeployment() throws ContextBrokerException {
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.set("Authorization", "ASTRID "
+				+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+		RestTemplate restTemplate = new RestTemplate();
+
+		// deleting agents
+		HttpEntity<?> requestBody = new HttpEntity<Object>(headers);
+		ResponseEntity<String> result = null;
+		String urlA = "http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent/";
+		result = restTemplate.exchange(urlA, HttpMethod.DELETE, requestBody, String.class);
+		if (result.getStatusCode() == HttpStatus.OK) {
+			logger.info("Remove +++++++++  Agents correctly removed");
+		}
+		List<Ebpf> ebps = getEbpfCodes();
+		if (ebps.size() > 0) {
+			for (Ebpf ebpf : ebps) {
+				urlA = "http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort()
+						+ "/instance/ebpf-program/" + ebpf.getId();
+				result = restTemplate.exchange(urlA, HttpMethod.DELETE, requestBody, String.class);
+				if (result.getStatusCode() == HttpStatus.OK) {
+					logger.info("Remove +++++++++  Ebpf correctly removed " + ebpf.getId());
+				}
+			}
+		} else {
+			logger.info("Remove +++++++++  No EBPFS");
+		}
+
+		removeExecEnvs();
+		return null;
+	}
+
+	private static List<Ebpf> getEbpfCodes() {
+		List<Ebpf> exec_env = new ArrayList<>();
+		ObjectMapper objectMapper = new ObjectMapper();
+		RestTemplate restTemplate = new RestTemplate();
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.set("Authorization", "ASTRID "
+				+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+		HttpEntity<?> requestBody = new HttpEntity<Object>(headers);
+
+		Jaxb2RootElementHttpMessageConverter converter = new Jaxb2RootElementHttpMessageConverter();
+		converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
+		restTemplate.setMessageConverters(Arrays.asList(converter, new StringHttpMessageConverter()));
+		try {
+			ResponseEntity<String> response = restTemplate.exchange(
+					"http://130.251.17.128:5000" + "/instance/ebpf-program", HttpMethod.GET, requestBody, String.class,
+					1);
+			exec_env = Arrays.asList(objectMapper.readValue(response.getBody(), Ebpf[].class));
+		} catch (Exception e) {
+		}
+		return exec_env;
+	}
 
 }

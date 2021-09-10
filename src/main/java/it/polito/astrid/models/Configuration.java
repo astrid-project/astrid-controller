@@ -60,6 +60,14 @@ public class Configuration{
         public void setId(String id) { 
     		 this.id = id; } 
         String id;
+        
+        @JsonProperty("deployment") 
+        public String getDeployment() { 
+    		 return this.deployment; } 
+        public void setDeployment(String deployment) { 
+    		 this.deployment = deployment; } 
+        
+        
         @JsonProperty("name") 
         public String getName() { 
     		 return this.name; } 
@@ -84,6 +92,7 @@ public class Configuration{
         public void setExec_env_id(String exec_env_id) { 
     		 this.exec_env_id = exec_env_id; } 
         String exec_env_id;
+        String deployment;
         @JsonProperty("operations") 
         public List<Operation> getOperations() { 
     		 return this.operations; } 
