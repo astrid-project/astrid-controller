@@ -225,6 +225,7 @@ public class InstanceEbpf {
 			if(ebpf.getExec_env_id().equals(exec_id)) {
 				logger.info("!!!  Found ebpf in exec= " +exec_id );
 				String mapTypeMessage =dynMap.get(ebpf.getId());
+				if (mapTypeMessage!=null)
 				if(mapTypeMessage.equals(message)) {
 					logger.info("!!!  With the same type= " +message );
 					return true;
@@ -334,3 +335,4 @@ public class InstanceEbpf {
 		throw new ContextBrokerException("Unable to find a Firewall with specified ID");
 	}
 }
+

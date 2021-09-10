@@ -128,8 +128,8 @@ rule "DNS BAU"
         then
         		InstanceEbpf IFS = new InstanceEbpf(component1,ids);
 				System.out.println("^^^^^^  DNS BAU");
-				IFS.ebpfAlarmRm("dns_bau_ip",k.status.mUseCase,k.status.networkStatus);
-				IFS.ebpfAlarm("dns_bau_ip","ogstun",k.status.networkStatus);
+				IFS.ebpfAlarmRm("dns_warn_ip",k.status.mUseCase,"WARN");
+				IFS.ebpfAlarm("dns_warn_ip","ogstun","WARN");
 end
 
 
@@ -167,3 +167,4 @@ rule "Register Deployement"
         		InstanceAgents IFS = new InstanceAgents(component1, interceptObject.getDeployement());
 
 end
+
