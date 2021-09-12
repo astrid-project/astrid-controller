@@ -329,7 +329,7 @@ public class RegisterService {
 		return result;
 	}
 
-	public void registerExecDeployment (Configuration config) throws IOException {
+	public void registerExecDeployment(Configuration config) throws IOException {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authorization", "ASTRID "
@@ -365,10 +365,10 @@ public class RegisterService {
 		try {
 			// Send request with POST method.
 			result_exec = restTemplate.postForEntity(
-					"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/exec-env", requestBody_exec,
-					String.class);
+					"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/exec-env",
+					requestBody_exec, String.class);
 			if (result_exec.getStatusCode() == HttpStatus.OK) {
-				logger.info("++++++++++ Execution Enviroment created with id = " );
+				logger.info("++++++++++ Execution Enviroment created with id = ");
 			} else {
 				logger.error("++++++++++ Execution Enviroment  with an error: " + result_exec.getBody());
 			}
@@ -376,8 +376,9 @@ public class RegisterService {
 			logger.error("++++++++++ error while contatcting Context Broker module: " + e.getMessage());
 			throw new IOException();
 		}
-		
+
 	}
+
 	public String registerDeployment(Configuration config) throws IOException {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -388,9 +389,8 @@ public class RegisterService {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.setSerializationInclusion(Include.NON_NULL);
 
-		
 		registerExecDeployment(config);
-		//register agents
+		// register agents
 		List<Agent_Instance> agents = new ArrayList<Agent_Instance>();
 		for (Pipeline pipeline : config.getDeployment().getPipelines()) {
 			for (Agent agentFile : pipeline.getAgents()) {
@@ -444,18 +444,29 @@ public class RegisterService {
 		// deleting agents
 		HttpEntity<?> requestBody = new HttpEntity<Object>(headers);
 		ResponseEntity<String> result = null;
-		String urlA = "http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent/";
-		result = restTemplate.exchange(urlA, HttpMethod.DELETE, requestBody, String.class);
-		if (result.getStatusCode() == HttpStatus.OK) {
-			logger.info("Remove +++++++++  Agents correctly removed");
+		String urlA = "http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent";
+		logger.info("Remove +++++++++  " + urlA);
+		try {
+			result = restTemplate.exchange(urlA, HttpMethod.DELETE, requestBody, String.class);
+			if (result.getStatusCode() == HttpStatus.RESET_CONTENT) {
+				logger.info("Remove +++++++++  Agents correctly removed");
+			} else if (result.getStatusCode() == HttpStatus.NOT_FOUND) {
+				logger.info("Remove +++++++++  Nothing to remove");
+			}
+		} catch (Exception e) {
+			logger.info("Remove +++++++++  Nothing to remove");
 		}
+		
+		
+		ResponseEntity<String> result2 = null;
 		List<Ebpf> ebps = getEbpfCodes();
+		logger.info("Remove +++++++++  EBPFs to remove "+ebps.size());
 		if (ebps.size() > 0) {
 			for (Ebpf ebpf : ebps) {
-				urlA = "http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort()
+				String urlB  = "http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort()
 						+ "/instance/ebpf-program/" + ebpf.getId();
-				result = restTemplate.exchange(urlA, HttpMethod.DELETE, requestBody, String.class);
-				if (result.getStatusCode() == HttpStatus.OK) {
+				result2 = restTemplate.exchange(urlB, HttpMethod.DELETE, requestBody, String.class);
+				if (result2.getStatusCode() == HttpStatus.OK) {
 					logger.info("Remove +++++++++  Ebpf correctly removed " + ebpf.getId());
 				}
 			}
@@ -467,7 +478,7 @@ public class RegisterService {
 		return null;
 	}
 
-	private static List<Ebpf> getEbpfCodes() {
+	private  List<Ebpf> getEbpfCodes() {
 		List<Ebpf> exec_env = new ArrayList<>();
 		ObjectMapper objectMapper = new ObjectMapper();
 		RestTemplate restTemplate = new RestTemplate();
@@ -483,8 +494,9 @@ public class RegisterService {
 		restTemplate.setMessageConverters(Arrays.asList(converter, new StringHttpMessageConverter()));
 		try {
 			ResponseEntity<String> response = restTemplate.exchange(
-					"http://130.251.17.128:5000" + "/instance/ebpf-program", HttpMethod.GET, requestBody, String.class,
+					"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/ebpf-program", HttpMethod.GET, requestBody, String.class,
 					1);
+			System.out.println(response.getBody());
 			exec_env = Arrays.asList(objectMapper.readValue(response.getBody(), Ebpf[].class));
 		} catch (Exception e) {
 		}
