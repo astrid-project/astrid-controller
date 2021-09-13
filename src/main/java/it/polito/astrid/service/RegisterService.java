@@ -374,7 +374,6 @@ public class RegisterService {
 			}
 		} catch (Exception e) {
 			logger.error("++++++++++ error while contatcting Context Broker module: " + e.getMessage());
-			throw new IOException();
 		}
 
 	}
