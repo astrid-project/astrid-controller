@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.json.JSONArray;
 import org.slf4j.Logger;
@@ -378,7 +379,7 @@ public class RegisterService {
 
 	}
 
-	public String registerDeployment(Configuration config) throws IOException {
+	public String registerDeployment(Configuration config) throws IOException, InterruptedException {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("Authorization", "ASTRID "
@@ -389,6 +390,7 @@ public class RegisterService {
 		mapper.setSerializationInclusion(Include.NON_NULL);
 
 		registerExecDeployment(config);
+		TimeUnit.SECONDS.sleep(5);
 		// register agents
 		List<Agent_Instance> agents = new ArrayList<Agent_Instance>();
 		for (Pipeline pipeline : config.getDeployment().getPipelines()) {

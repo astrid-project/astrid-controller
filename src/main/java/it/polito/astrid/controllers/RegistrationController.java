@@ -176,10 +176,16 @@ public class RegistrationController {
 			@ApiResponse(code = 400, message = "Bad Request"), })
 	@ResponseBody
 	public ResponseEntity<String> registerDeployment(@RequestBody Configuration config)
-			throws AstridComponentNotFoundException, IOException, ResourceNotFoundException {
+			throws AstridComponentNotFoundException, IOException, ResourceNotFoundException, InterruptedException {
 		registerService.setComponent(registerService.getContextBroker(this));
 		
 		String result = registerService.registerDeployment(config);
+		TimeUnit.SECONDS.sleep(5);
+		try {
+			uploadInitialBau("DNS");	
+		} catch (Exception e) {
+		}
+		
 		return new ResponseEntity<String>(result, HttpStatus.OK);
 	}
 	
