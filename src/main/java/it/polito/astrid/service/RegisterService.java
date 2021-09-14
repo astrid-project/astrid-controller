@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import ch.qos.logback.core.joran.spi.Interpreter;
@@ -44,6 +45,7 @@ import it.polito.astrid.models.Configuration.Pipeline;
 import it.polito.contextbroker.model.Agent_Instance;
 import it.polito.contextbroker.model.Execution_Environment;
 import it.polito.contextbroker.model.Execution_Environment.LCP;
+import it.polito.contextbroker.model.actions;
 import it.polito.verefoo.astrid.jaxb.Components.Component;
 import net.minidev.json.JSONObject;
 
@@ -400,6 +402,11 @@ public class RegisterService {
 				agent.setAgent_catalog_id(agentFile.getName());
 				agent.setId(agentFile.getId());
 				agent.setStatus(pipeline.getStatus());
+				//actions actioning  = new actions();
+				//actioning.setAction("start");
+				//List<actions> list_actions = new ArrayList<actions>();
+				//list_actions.add(actioning);
+				//agent.setActions(list_actions);
 				agents.add(agent);
 
 			}
@@ -409,6 +416,9 @@ public class RegisterService {
 		HttpEntity<List<Agent_Instance>> requestBody = new HttpEntity<List<Agent_Instance>>(agents, headers);
 
 		ResponseEntity<String> result = null;
+		
+		
+		
 		try {
 			// Send request with POST method.
 			result = restTemplate.postForEntity(
@@ -416,6 +426,12 @@ public class RegisterService {
 					requestBody, String.class);
 			if (result.getStatusCode() == HttpStatus.OK) {
 				logger.info("++++++++++ Agents loaded created with file = " + agents);
+				
+				
+				for (Agent_Instance agent_Instance : agents) {
+					startAgents(agent_Instance);
+				}
+				
 				return result.getBody();
 			} else {
 				logger.error("++++++++++ Agents  with an error: " + result.getBody());
@@ -425,8 +441,49 @@ public class RegisterService {
 			return e.getResponseBodyAsString();
 
 		}
+		
+		
 
 		return result.getBody();
+	}
+
+	private void startAgents(Agent_Instance agent_Instance) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.set("Authorization", "ASTRID "
+				+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOiIxNjIwMjQwNTEwIiwiaWF0IjoxNjIwMzI2NjIwLCJleHAiOjE2NTE4NjI2MjB9.qxhLtnwciHR0N-WANXh2Btw2zcPyDmjSxdkKJBXiy50");
+
+		
+		String json= "  {\r\n"
+				+ "		\"operations\" : [\r\n"
+				+ "			{\r\n"
+				+ "    	\"actions\": [\r\n"
+				+ "      	{\r\n"
+				+ "        	\"id\": \"start\"\r\n"
+				+ "      	}\r\n"
+				+ "    	]\r\n"
+				+ "			}\r\n"
+				+ "		],\r\n"
+				+ "    \"id\": \""+agent_Instance.getId()+"\"\r\n"
+				+ "  }";
+		
+		RestTemplate restTemplate = new RestTemplate();
+
+		// Data attached to the request.
+		logger.info("$$$$$$$$ Agent with payload "+json);
+		HttpEntity<String> requestBody = new HttpEntity<String>(json,headers);
+		
+		ResponseEntity<String> result = null;
+		result = restTemplate.exchange(
+				"http://" + ContextBroker.getIPAddress() + ":" + ContextBroker.getPort() + "/instance/agent",
+				HttpMethod.PUT, requestBody, String.class);
+		logger.info("$$$$$$$$ Result = " + result);
+		if (result.getStatusCode() == HttpStatus.OK) {
+			logger.info("$$$$$$$$ Agents Started = " + result.getBody());
+		} else {
+			logger.error("$$$$$$$$ Agents were not started with an error: " + result.getBody());
+		}
+		
 	}
 
 	public void removeDynMon() {

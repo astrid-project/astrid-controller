@@ -180,7 +180,7 @@ public class RegistrationController {
 		registerService.setComponent(registerService.getContextBroker(this));
 		
 		String result = registerService.registerDeployment(config);
-		TimeUnit.SECONDS.sleep(5);
+		TimeUnit.SECONDS.sleep(10);
 		try {
 			uploadInitialBau("DNS");	
 		} catch (Exception e) {
