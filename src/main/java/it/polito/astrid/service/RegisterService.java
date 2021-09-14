@@ -429,6 +429,7 @@ public class RegisterService {
 				
 				
 				for (Agent_Instance agent_Instance : agents) {
+					if(agent_Instance.getAgent_catalog_id().equals("packetbeat"))
 					startAgents(agent_Instance);
 				}
 				
